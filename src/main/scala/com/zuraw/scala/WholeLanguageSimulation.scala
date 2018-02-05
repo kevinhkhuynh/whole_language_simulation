@@ -102,7 +102,7 @@ object WholeLanguageSimulation extends App {
   model.addSubset(perceivedForm.get, subset)
 
   // Run numTrials amount of trials
-  val numTrials = 100
+  val numTrials = 1000
 
   // Store learned constraint weights and negative log-likelihood for a given trial
   var trials = scala.collection.mutable.ArrayBuffer[Tuple2[DenseTensor1, Double]]()
@@ -257,7 +257,6 @@ object WholeLanguageSimulation extends App {
           var temp = 0.0
           for (factor <- model.getSubsetFactors(instance._1)) {
             gradient_E_a += factor.weights * factor.score(factor.getChild.value, factor.getParent.value) * instance._3
-            // temp += exp(model.constraintWeights.value dot factor.weights)
             temp += factor.maxEntScore
           }
           value_E_a += log(temp) * instance._3
@@ -326,7 +325,7 @@ object WholeLanguageSimulation extends App {
         }
 
         // Add negative log of real frequency multiplied by probability of seeing this form
-        currLogLikelihood -= log(instance._3 * alpha(instance._2)(T_transitions))
+        currLogLikelihood += instance._3 * log(alpha(instance._2)(T_transitions))
       }
     }
 
@@ -338,8 +337,8 @@ object WholeLanguageSimulation extends App {
   }
 
   // Obtain best trial
-  val bestTrial = trials.minBy(dim => dim._2)
-
+  val bestTrial = trials.maxBy(dim => dim._2)
+  
   // Create file and writer to print out results
   val pw = new PrintWriter(new File("MaximumEntropyMarkovModel.txt"))
 
