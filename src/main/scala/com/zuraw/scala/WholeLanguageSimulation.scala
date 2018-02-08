@@ -384,7 +384,7 @@ object WholeLanguageSimulation extends App {
   val pw = new PrintWriter(new File("MaximumEntropyMarkovModel.txt"))
 
   // Print log-likelihood of best trial
-  pw.write("Best Log-Likelihood \n")
+  pw.write("Best Log-Likelihood\n")
   pw.write(bestTrial._2.toString  + "\n\n")
 
   // Print constraint weights of best trial
@@ -451,8 +451,8 @@ object WholeLanguageSimulation extends App {
               // Normalize ground truth frequencies into probabilities
               val normalizationTerm = trainingData.filter(item => item._1 == instance).foldLeft(0.0) {(normalizationTerm, item) => normalizationTerm + item._3}
 
-              // Print training and predicted probabilities of best trial
-              pw.write(instance + "," +state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," +alpha(state)(t)  + "\n")
+              // Print training and predicted probabilities of best trial (remove R from state)
+              pw.write(instance + "," + state.drop(1) + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + alpha(state)(t) + "\n")
             }
           }
       }
