@@ -15,12 +15,36 @@ object WholeLanguageSimulation extends App {
   // Create a random variable for Gaussian noise
   implicit val random = new scala.util.Random()
 
+  // Name of tableau file
+  var tableauFileName = "FullGrammar_forOTSoft_plus_missing_intermediate_states.csv"
+
   // The length of the word chain path in number of transitions and states
   val T_transitions = 3
   var T_states = 4
 
+  // Only continue with random initialization if log-likelihood is better than randomThreshold
+  val allowRandomThreshold = false
+
+  // Minimum log-Likelihood of random initialization necessary to begin EM
+  val randomThreshold = -600.0
+
+  // Run numTrials amount of trials
+  val numTrials = 50
+
+  // Store learned constraint weights and log-likelihood for a given trial
+  var trials = scala.collection.mutable.ArrayBuffer[Tuple2[DenseTensor1, Double]]()
+
+  // Choose tolerance to end EM algorithm (experimentally derived)
+  val tolerance = 0.25
+
+  // Define model
+  val model = new MaximumEntropyMarkovModel
+
+  // Define states
+  val States = scala.collection.mutable.HashMap[String, State]()
+
   // Read tableau file
-  var tableau = readFile.read("FullGrammar_forOTSoft_plus_missing_intermediate_states.csv").asScala
+  var tableau = readFile.read(tableauFileName).asScala
 
   // Variable to store features (the constraints)
   val features = scala.collection.mutable.ArrayBuffer[String]()
@@ -28,27 +52,20 @@ object WholeLanguageSimulation extends App {
   // Define constraints
   tableau.head.foreach{feature => features.append(feature)}
 
-  // Define states
-  val States = scala.collection.mutable.HashMap[String, State]()
-
-  // Define model
-  val model = new MaximumEntropyMarkovModel
-
-  // Variable holding perceived form so that states for different word chains can be kept separate
-  var perceivedForm = None:Option[String]
+  // Hold training data that consists of [perceivedForm, spokenForm, count of spokenForms in data]
+  var trainingData = scala.collection.mutable.ArrayBuffer[Tuple3[String, String, Double]]()
 
   // Hold current subset of variables, or word chain
   var subset = scala.collection.mutable.Set[String]()
 
-  // Hold training data that consists of [perceivedForm, spokenForm, count of spokenForms in data]
-  var trainingData = scala.collection.mutable.ArrayBuffer[Tuple3[String, String, Double]]()
+  // Variable holding perceived form so that states for different word chains can be kept separate
+  var perceivedForm = None:Option[String]
 
   // Define states, transitions, and candidate weights, and then add them to the model
   for (line <- tableau.drop(1)) {
 
     // Split line into cells
     val cells = line.mkString(",").split(",")
-
     cells(0)(0) match {
 
       // Have to add a symbol to differentiate between surface forms that are perceived or created
@@ -63,7 +80,6 @@ object WholeLanguageSimulation extends App {
           subset = subset.empty
         }
         perceivedForm = Some(cells(0))
-
       case _ =>
     }
 
@@ -95,30 +111,53 @@ object WholeLanguageSimulation extends App {
       }
     }
 
+    // Add transition to model
     model += new MarkovTransition(States(cells(1)), States(cells(0)), candidateWeights)
   }
 
   // Add last subset
   model.addSubset(perceivedForm.get, subset)
 
-  // Run numTrials amount of trials
-  val numTrials = 1000
-
-  // Store learned constraint weights and negative log-likelihood for a given trial
-  var trials = scala.collection.mutable.ArrayBuffer[Tuple2[DenseTensor1, Double]]()
-
-  // Choose tolerance to end EM algorithm
-  val tolerance = 1.0E-4
-
   // Repeat EM algorithm for numTrial amount of trials
   for (trial <- 0 to numTrials) {
-
-    // Randomize parameters for next trial run
-    model.randomizeParameters
 
     // Initialize log-likelihood
     var currLogLikelihood = 0.0
     var prevLogLikelihood = 0.0
+
+    trial match {
+
+      // Initialize weights to zero
+      case 0 =>
+        model.setParameters(0.0)
+
+      //Initialize weights to one
+      case 1 =>
+        model.setParameters(1.0)
+
+      case _ =>
+    }
+
+    // Reset parameters until we obtain a random initialization with log-likelihood better than randomThreshold
+    if (allowRandomThreshold && trial > 1) {
+      do {
+
+        // Reset currLogLikelihood
+        currLogLikelihood = 0.0
+
+        // Randomize parameters for next trial run
+        model.randomizeParameters
+
+        // Find log-likelihood of the random initialization
+        currLogLikelihood = this.findLogLikelihood
+      }
+      while (currLogLikelihood < randomThreshold)
+    }
+    else if (trial > 1) {
+
+      // Randomize parameters for next trial run
+      model.randomizeParameters
+    }
 
     // Use E-M Algorithm to calculate constraint weights that maximize the log likelihood
     do {
@@ -145,6 +184,9 @@ object WholeLanguageSimulation extends App {
 
         // Expected number of transitions from state i to state j, or factor(i,j)
         val eta = scala.collection.mutable.HashMap[MarkovTransition, Double]()
+
+        // The probability of each state in terms of the complete path of the observation
+        val probabilityOfParent = scala.collection.mutable.HashMap[State, Double]()
 
         // Initialize alpha and beta tables
         for (state <- model.getSubset(instance._1)) {
@@ -233,14 +275,28 @@ object WholeLanguageSimulation extends App {
           }
         }
 
+        // Obtain the probability of each state in terms of the complete path of the observation
+        for (state <- relevantStates.filter(state => state(0) == '[')) {
+          probabilityOfParent(States(state)) = 1.0
+        }
+        for (state <- relevantStates.filter(state => state(0) == '/')) {
+          probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent)}
+        }
+        for (state <- relevantStates.filter(state => state(0) == '|')) {
+          probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent)}
+        }
+        for (state <- relevantStates.filter(state => state(0) == 'R')) {
+          probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent)}
+        }
+
         // Obtain this instance's contribution to F_a
         for (factor <- relevantFactors) {
-          F_a += factor.weights * eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * instance._3
-        }
+          F_a += factor.weights * probabilityOfParent(factor.getParent) * eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * instance._3
+         }
       }
 
       // M-step uses the GIS procedure with feature frequencies based on the E-step state occupancies to compute new transition functions
-      val GIS = new ConjugateGradient
+      val GIS = new ConjugateGradient(0.001)
 
       // Create Weights Map from gradient for use with Factorie's ConjugateGradient
       val weightMap = new WeightsMap((Weights) => new DenseTensor1(features.size, 0.0))
@@ -250,87 +306,72 @@ object WholeLanguageSimulation extends App {
 
         // E_a = Expected count of features
         var gradient_E_a = new DenseTensor1(features.size, 0.0)
-        var value_E_a = 0.0
 
         // Obtain this iteration's E_a (value and gradient) by looping through training data
         for (instance <- trainingData) {
-          var temp = 0.0
-          for (factor <- model.getSubsetFactors(instance._1)) {
-            gradient_E_a += factor.weights * factor.score(factor.getChild.value, factor.getParent.value) * instance._3
-            temp += factor.maxEntScore
+
+          // Store relevant variables
+          val relevantStates = model.getSubset(instance._1)
+
+          // The probability of each state in terms of a complete path
+          val probabilityOfParent = scala.collection.mutable.HashMap[State, Double]()
+
+          // Obtain the probability of each state in terms of a complete path
+          for (state <- relevantStates.filter(state => state(0) == '[')) {
+            probabilityOfParent(States(state)) = 1.0
           }
-          value_E_a += log(temp) * instance._3
+          for (state <- relevantStates.filter(state => state(0) == '/')) {
+            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value)* probabilityOfParent(factor.getParent)}
+          }
+          for (state <- relevantStates.filter(state => state(0) == '|')) {
+            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent)}
+          }
+          for (state <- relevantStates.filter(state => state(0) == 'R')) {
+            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent)}
+          }
+
+          for (factor <- model.getSubsetFactors(instance._1)) {
+              gradient_E_a += factor.weights * probabilityOfParent(factor.getParent) * factor.score(factor.getChild.value, factor.getParent.value) * instance._3
+          }
         }
 
-        // Loss function
-        val value = (F_a dot model.constraintWeights.value) - value_E_a - (model.regularizationWeight / 2 * (model.constraintWeights.value dot model.constraintWeights.value)) - (model.negativePenalization / 2 * model.constraintWeights.value.foldLeft(0.0) { (weight, dim) => weight + pow(min(dim, 0), 2) })
+        // Reset currLogLikelihood
+        currLogLikelihood = 0.0
 
+        // Find log-likelihood after one iteration of the EM algorithm
+        currLogLikelihood = this.findLogLikelihood
+
+        // Subtract regularization penalty to loss function
+        currLogLikelihood -= (model.regularizationWeight / 2 * (model.constraintWeights.value dot model.constraintWeights.value)) - (model.negativePenalization / 2 * model.constraintWeights.value.foldLeft(0.0) { (weight, dim) => weight + pow(min(dim, 0), 2) })
         // Gradient of loss function
-        val gradient = F_a - gradient_E_a - (model.constraintWeights.value * model.regularizationWeight) - (new DenseTensor1(model.constraintWeights.value.map { dim => max(-dim, 0) }) * model.negativePenalization)
+        val gradient = gradient_E_a - F_a - model.constraintWeights.value * model.regularizationWeight
+
+        // Ensure gradient is positive for negative weights
+        for (dim <- features.indices) {
+          if (model.constraintWeights.value(dim) < 0)
+            gradient(dim) = -model.constraintWeights.value(dim) * model.negativePenalization
+        }
 
         // Update Weights Map with this iteration's gradient
         weightMap.update(model.constraintWeights, gradient)
 
         // Iterate
-        GIS.step(model.parameters, weightMap, value)
-      }
+        GIS.step(model.parameters, weightMap, currLogLikelihood)
 
-      // Reset currLogLikelihood
-      currLogLikelihood = 0.0
-
-      // Find this iteration's log-likelihood
-      for (instance <- trainingData) {
-
-        // Store relevant factors and variables
-        val relevantStates = model.getSubset(instance._1)
-
-        // Forward probability
-        val alpha = scala.collection.mutable.HashMap[String, Array[Double]]()
-
-        // Initialize alpha and beta tables
-        for (state <- model.getSubset(instance._1)) {
-          alpha.put(state, Array.fill(T_states) {0.0})
-        }
-
-        // Sequentially find alpha(t) for all states
-        for (t <- 0 to T_transitions) {
-          t match {
-
-            // Set initial state probability to 1
-            case 0 => alpha(instance._1)(t) = 1.0
-
-            // Find alpha(t)
-            case _ =>
-
-              // Obtain normalization term
-              var normalizationTerm = 0.0
-
-              // Obtain alpha(t) for each state
-              for (state <- relevantStates) {
-
-                alpha(state)(t) += model.parentFactors(States(state)).foldLeft(alpha(state)(t)) { (score, factor) =>
-                  score + factor.score(factor.getChild.value, factor.getParent.value) *
-                    alpha(factor.getParent.Value)(t - 1)
-                }
-
-                // Add alpha(t) to normalizationTerm
-                normalizationTerm += alpha(state)(t)
-              }
-
-              // Divide alpha(t) by normalizationTerm
-              for (state <- relevantStates) {
-                alpha(state)(t) /= normalizationTerm
-              }
-          }
-        }
-
-        // Add negative log of real frequency multiplied by probability of seeing this form
-        currLogLikelihood += instance._3 * log(alpha(instance._2)(T_transitions))
       }
     }
 
     // Repeat previous do block until tolerance is not surpassed
-    while (currLogLikelihood - prevLogLikelihood > tolerance)
+    while (abs(currLogLikelihood - prevLogLikelihood) > tolerance)
+
+    // Remove all negatives (should all be barely negative)
+    model.removeNegatives
+
+    // Reset currLogLikelihood
+    currLogLikelihood = 0.0
+
+    // Find log-likelihood of the set of parameters without regularization penalties
+    currLogLikelihood = this.findLogLikelihood
 
     // Append current trial
     trials += Tuple2(model.constraintWeights.value.asInstanceOf[DenseTensor1].copy, currLogLikelihood)
@@ -338,12 +379,12 @@ object WholeLanguageSimulation extends App {
 
   // Obtain best trial
   val bestTrial = trials.maxBy(dim => dim._2)
-  
+
   // Create file and writer to print out results
   val pw = new PrintWriter(new File("MaximumEntropyMarkovModel.txt"))
 
-  // Print negative log-likelihood of best trial
-  pw.write("Best Negative Log-Likelihood \n")
+  // Print log-likelihood of best trial
+  pw.write("Best Log-Likelihood \n")
   pw.write(bestTrial._2.toString  + "\n\n")
 
   // Print constraint weights of best trial
@@ -420,4 +461,64 @@ object WholeLanguageSimulation extends App {
 
   // Close file writer
   pw.close()
+
+  // Find the logLikelihood
+  def findLogLikelihood = {
+
+    // Initialize currLogLikelihood
+    var currLogLikelihood = 0.0
+
+    // Find this iteration's log-likelihood
+    for (instance <- trainingData) {
+
+      // Store relevant factors and variables
+      val relevantStates = model.getSubset(instance._1)
+
+      // Forward probability
+      val alpha = scala.collection.mutable.HashMap[String, Array[Double]]()
+
+      // Initialize alpha and beta tables
+      for (state <- model.getSubset(instance._1)) {
+        alpha.put(state, Array.fill(T_states) {0.0})
+      }
+
+      // Sequentially find alpha(t) for all states
+      for (t <- 0 to T_transitions) {
+        t match {
+
+          // Set initial state probability to 1
+          case 0 => alpha(instance._1)(t) = 1.0
+
+          // Find alpha(t)
+          case _ =>
+
+            // Obtain normalization term
+            var normalizationTerm = 0.0
+
+            // Obtain alpha(t) for each state
+            for (state <- relevantStates) {
+
+              alpha(state)(t) += model.parentFactors(States(state)).foldLeft(alpha(state)(t)) { (score, factor) =>
+                score + factor.score(factor.getChild.value, factor.getParent.value) *
+                  alpha(factor.getParent.Value)(t - 1)
+              }
+
+              // Add alpha(t) to normalizationTerm
+              normalizationTerm += alpha(state)(t)
+            }
+
+            // Divide alpha(t) by normalizationTerm
+            for (state <- relevantStates) {
+              alpha(state)(t) /= normalizationTerm
+            }
+        }
+      }
+
+      // Add log of real frequency multiplied by probability of seeing this form
+      currLogLikelihood += instance._3 * log(alpha(instance._2)(T_transitions))
+    }
+
+    // Return currLogLikelihood
+    currLogLikelihood
+  }
 }

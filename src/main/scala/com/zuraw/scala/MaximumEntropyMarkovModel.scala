@@ -4,7 +4,7 @@ import cc.factorie.la.DenseTensor1
 import cc.factorie.model.{ItemizedModel, Parameters}
 import com.zuraw.scala.WholeLanguageSimulation.{States, features, random}
 
-import scala.math.abs
+import scala.math.{abs, max}
 
 /**
   * Created by kevinhuynh on 2/3/18.
@@ -19,7 +19,7 @@ class MaximumEntropyMarkovModel extends ItemizedModel with Parameters {
   val regularizationWeight = 10.0
 
   // Extremely penalize negative weights (Our situation requires positive weights)
-  val negativePenalization = 10000.0
+  val negativePenalization = 500.0
 
   // Holds the different subsets of variables that equate to different word chains
   var subset = scala.collection.mutable.HashMap[String, scala.collection.mutable.Set[String]]()
@@ -32,6 +32,16 @@ class MaximumEntropyMarkovModel extends ItemizedModel with Parameters {
   def setParameters(parameters: DenseTensor1) = {
     this.constraintWeights = Weights(new DenseTensor1(parameters))
   }
+
+  def setParameters(fillValue: Double) = {
+    this.constraintWeights = Weights(new DenseTensor1(Array.fill(features.size)(fillValue)))
+  }
+
+  def removeNegatives = {
+    val nonNegatives = new DenseTensor1(this.constraintWeights.value.map{dim => max(0.0, dim)})
+    this.constraintWeights = Weights(nonNegatives)
+  }
+
 
   // Add a new word chain, or subset of variables, to the model
   def addSubset(perceivedForm: String, relatedForms: scala.collection.mutable.Set[String]) = subset.put(perceivedForm, relatedForms)
