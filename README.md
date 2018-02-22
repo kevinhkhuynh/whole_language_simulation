@@ -1,1 +1,45 @@
 # whole_language_simulation
+
+Instructions
+
+1. Download the whole_language_simulation repository using Git.
+
+2. Install Java JDK 8 and Apache Maven.
+
+3. Enter the base directory of the repository.
+
+  For Mac and Linux Users:
+  - Open up Terminal
+  - cd FULL_PATH_OF_BASE_DIRECTORY_OF_REPOSITORY
+  
+  For Windows Users:
+  - Open up the Windows Command Prompt.
+  - https://introcs.cs.princeton.edu/java/15inout/windows-cmd.html
+
+4. To run the code with a sample tableau, run the following command from the base directory of the repository. The [FILE].csv must be passed as an argument into the .jar file for the model to run.
+   java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv 
+   
+5. The tableau must be in .csv format.
+
+  - The first cell of the first line must be "Features" followed by the list of features.
+  - The next set of lines must be "Transition" followed by the name of the parent node, the name of the child node, and the list of features for the given transition. The list of features must equal to the number given in FEATURES.
+  - The last set of lines must be "Observation" followed by the name of the root node, the name of the leaf node, and the frequency of this given observation.
+  - One thing to note is that no two states can be given the same name, even if they semantically mean the same thing. For example, if I would like to create a path for three different nodes [1:A -> 2:B -> 3:A], the MEMM would model this as [1:A -> 2:B -> 1:A]. Thus, any two states with the same name must be differentiated with a beginning marker (X) where x is the marker for the number of the state. In our example, the path would be marked as [1:A -> 2:B -> 3:(2)A], where (2) is the marker showing that this state is different from the previous. 
+  - An example .csv file is given in whole_language_simulation/example.csv.
+
+6. There are multiple model parameters that can be adjusted depending on your particular model by passing in optional parameters to the .jar file. Keep in mind that passing in certain values for some of these parameters may cause the model to crash.
+   
+  - whole_language_simulation [FILE].csv -len_trans [int] -len_states [int] -threshold [double] -removemarkers [bool] -numtrials [int] -tolerance [double] -l2param [double] -negparam [double] -stepsize[double]
+   
+  - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv -len_trans 4 -len_states 2 -threshold 300 -removemarkers false -numtrials 20 -tolerance 20 -l2param 200 -negparam 10 -stepsize 10
+  
+Optional Parameters
+-len_trans (default = 3) : The length of the word chain path in number of transitions
+-len_states (default = 4): The length of the word chain path in number of states
+-threshold (default = None):  Minimum log-Likelihood of random initialization necessary to begin the EM algorithm
+-removemarkers (default = true): Remove markers (for states that are numbered for differentiation)
+-numtrials (default: 50): The number of trials
+-tolerance (default: 0.25): The tolerance in which the EM algorithm is considered converged
+-l2param (default: 10): The l2 regularization penalty of the MEMM
+-negparam (default: 500): The penalty given to a negative weight of the MEMM
+-stepsize (default: 0.001): The step size of the Conjugate Gradient
