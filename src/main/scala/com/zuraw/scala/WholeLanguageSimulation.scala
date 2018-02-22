@@ -42,7 +42,7 @@ object WholeLanguageSimulation extends App {
   val randomThreshold = -600.0
 
   // Run numTrials amount of trials
-  val numTrials = 1
+  val numTrials = 50
 
   // Store learned constraint weights and log-likelihood for a given trial
   var trials = scala.collection.mutable.ArrayBuffer[Tuple2[DenseTensor1, Double]]()
