@@ -32,17 +32,16 @@ Instructions
 
 6. There are multiple model parameters that can be adjusted depending on your particular model by passing in optional parameters to the .jar file. The optional parameters can be inputted in any order. Also, keep in mind that passing in nonsensical values for some of these parameters may cause the model to crash.
 
-Optional Parameters
-- -len_trans [int] (default = 3) : The length of the word chain path in number of transitions
-- -len_states [int] (default = 4): The length of the word chain path in number of states
-- -threshold [double] (default = None):  Minimum log-Likelihood of random initialization necessary to begin the EM algorithm
-- -removemarkers [boolean] (default = true): Remove markers (for states that are numbered for differentiation)
-- -numtrials [int] (default: 50): The number of trials
-- -tolerance [double] (default: 0.25): The tolerance in which the EM algorithm is considered converged
-- -l2param [double] (default: 10): The l2 regularization penalty of the MEMM
-- -negparam [double] (default: 500): The penalty given to a negative weight of the MEMM
-- -stepsize [double] (default: 0.001): The step size of the Conjugate Gradient
+  Optional Parameters
+  - -len_trans [int] (default = 3) : The length of the word chain path in number of transitions
+  - -len_states [int] (default = 4): The length of the word chain path in number of states
+  - -threshold [double] (default = None):  Minimum log-Likelihood of random initialization necessary to begin the EM algorithm
+  - -removemarkers [boolean] (default = true): Remove markers (for states that are numbered for differentiation)
+  - -numtrials [int] (default: 50): The number of trials
+  - -tolerance [double] (default: 0.25): The tolerance in which the EM algorithm is considered converged
+  - -l2param [double] (default: 10): The l2 regularization penalty of the MEMM
+  - -negparam [double] (default: 500): The penalty given to a negative weight of the MEMM
+  - -stepsize [double] (default: 0.001): The step size of the Conjugate Gradient
 
-Example command with optional parameters:
-
-  - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv -len_trans 4 -len_states 2 -threshold 300 -removemarkers false -numtrials 20 -tolerance 20 -l2param 200 -negparam 10 -stepsize 10
+  Example command with optional parameters:
+    - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv -len_trans 4 -len_states 2 -threshold 300 -removemarkers false -numtrials 20 -tolerance 20 -l2param 200 -negparam 10 -stepsize 10
