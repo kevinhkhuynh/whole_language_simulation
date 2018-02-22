@@ -44,4 +44,4 @@ Instructions
   - -stepsize [double] (default: 0.001): The step size of the Conjugate Gradient
 
   Example command with optional parameters:
-    - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv -len_trans 4 -len_states 2 -threshold 300 -removemarkers false -numtrials 20 -tolerance 20 -l2param 200 -negparam 10 -stepsize 10
+  - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv -len_trans 4 -len_states 2 -threshold 300 -removemarkers false -numtrials 20 -tolerance 20 -l2param 200 -negparam 10 -stepsize 10
