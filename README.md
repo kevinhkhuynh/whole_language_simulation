@@ -2,7 +2,7 @@
 
 This repository uses Factorie to implement a Maximum Entropy Markov Model primarily for use in the domain of phonology and linguistics. Given a tableau consisting of many hidden states and a handful of observations, the MEMM calculates the weights of the constraints.
 
-Instructions
+Instructions to Run the Code
 
 1. Download the whole_language_simulation repository from GitHub.
 
@@ -50,3 +50,14 @@ Instructions
 
   Example command with optional parameters:
   - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv -threshold -700 -removemarkers false -numtrials 20 -tolerance 0.2 -l2param 15 -negparam 600 -stepsize 0.0001
+  
+  
+Instructions to Alter the Code
+1. Complete steps 1-3 from the previous instructions.
+1. Download Apache Maven
+  - https://maven.apache.org/download.cgi
+2. Alter the source code.
+3. In the base directory of the project, run the following command:
+  - mvn package
+4. The new source code will be built and the model can now be run with the following command:
+  - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar [FILE].csv
