@@ -4,7 +4,8 @@ Instructions
 
 1. Download the whole_language_simulation repository using Git.
 
-2. Install Java JDK 8 and Apache Maven.
+2. Install Java JDK 8.
+  - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
 
 3. Enter the base directory of the repository.
 
