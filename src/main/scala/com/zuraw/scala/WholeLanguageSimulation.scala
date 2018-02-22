@@ -197,10 +197,10 @@ object WholeLanguageSimulation extends App {
   }
 
   // Repeat EM algorithm for numTrial amount of trials
-  for (trial <- 0 to numTrials) {
+  for (trial <- 1 to numTrials) {
 
     // Print trial number
-    System.out.println("Trial: " + (trial + 1))
+    System.out.println("Trial: " + trial)
 
     // Initialize log-likelihood
     var currLogLikelihood = 0.0
@@ -240,222 +240,237 @@ object WholeLanguageSimulation extends App {
       model.randomizeParameters
     }
 
-    // Use E-M Algorithm to calculate constraint weights that maximize the log likelihood
-    do {
+    // Stop gradient optimization crashes from exiting the program
+    try {
+      // Use E-M Algorithm to calculate constraint weights that maximize the log likelihood
+      do {
 
-      // E-step calculates state occupancies using the forward-backward algorithm with the current transition functions.
-      // Set prevLogLikelihood to last iteration's log-likelihood
-      prevLogLikelihood = currLogLikelihood
+        // E-step calculates state occupancies using the forward-backward algorithm with the current transition functions.
+        // Set prevLogLikelihood to last iteration's log-likelihood
+        prevLogLikelihood = currLogLikelihood
 
-      // F_a = Empirical count of features
-      var F_a = new DenseTensor1(features.size, 0.0)
+        // F_a = Empirical count of features
+        var F_a = new DenseTensor1(features.size, 0.0)
 
-      // Iterate through training data
-      for (instance <- trainingData) {
-
-        // Store relevant factors and variables
-        val relevantFactors = model.getSubsetFactors(instance._1)
-        val relevantStates = model.getSubset(instance._1)
-
-        // Forward probability
-        val alpha = scala.collection.mutable.HashMap[String, Array[Double]]()
-
-        // Backward probability
-        val beta = scala.collection.mutable.HashMap[String, Array[Double]]()
-
-        // Expected number of transitions from state i to state j, or factor(i,j)
-        val eta = scala.collection.mutable.HashMap[MarkovTransition, Double]()
-
-        // The probability of each state in terms of the complete path of the observation
-        val probabilityOfParent = scala.collection.mutable.HashMap[State, Double]()
-
-        // Initialize alpha and beta tables
-        for (state <- model.getSubset(instance._1)) {
-          alpha.put(state, Array.fill(T_states) {0.0})
-          beta.put(state, Array.fill(T_states) {0.0})
-        }
-
-        // Sequentially find alpha(t) for all states
-        for (t <- 0 to T_transitions) {
-          t match {
-
-            // Set initial state probability to 1
-            case 0 => alpha(instance._1)(t) = 1.0
-
-            // Set final state probability to 1
-            case T_transitions => alpha(instance._2)(t) = 1.0
-
-            // Find alpha(t) for t's in between
-            case _ =>
-
-              // Obtain normalization term
-              var normalizationTerm = 0.0
-
-              // Obtain alpha(t) for each state
-              for (state <- relevantStates) {
-
-                alpha(state)(t) += model.parentFactors(States(state)).foldLeft(alpha(state)(t)) { (score, factor) =>
-                  score + factor.score(factor.getChild.value, factor.getParent.value) *
-                    alpha(factor.getParent.Value)(t - 1)
-                }
-
-                // Add alpha(t) to normalizationTerm
-                normalizationTerm += alpha(state)(t)
-              }
-
-              // Divide alpha(t) by normalizationTerm
-              for (state <- relevantStates) {
-                alpha(state)(t) /= normalizationTerm
-              }
-          }
-        }
-
-        // Sequentially find beta(t) for all states
-        for (t <- T_transitions to 0 by -1) {
-          t match {
-
-            // Set initial state probability to 1
-            case 0 => beta(instance._1)(t) = 1.0
-
-            // Set final state probability to 1
-            case T_transitions => beta(instance._2)(t) = 1.0
-
-            // Find beta(t) for t's in between
-            case _ =>
-
-              // Store normalization term
-              var normalizationTerm = 0.0
-
-              // Obtain beta(t) for each state
-              for (state <- relevantStates) {
-                beta(state)(t) += model.childFactors(States(state)).foldLeft(beta(state)(t)) { (score, factor) =>
-                  score + factor.score(factor.getChild.value, factor.getParent.value) *
-                    beta(factor.getChild.Value)(t + 1)
-                }
-
-                // Add beta(t) to normalizationTerm
-                normalizationTerm += beta(state)(t)
-              }
-
-              // Divide beta(t) by normalizationTerm
-              for (state <- relevantStates) {
-                beta(state)(t) /= normalizationTerm
-              }
-          }
-        }
-
-        // Obtain eta for all factors
-        for (factor <- relevantFactors) {
-
-          // Initialize eta value for a factor
-          eta.put(factor, 0.0)
-
-          // Obtain eta for a specific factor by summing across all t
-          for (t <- 0 until T_transitions) {
-            eta(factor) += alpha(factor.getParent.Value)(t) * factor.score(factor.getChild.value, factor.getParent.value) * beta(factor.getChild.Value)(t + 1)
-          }
-        }
-
-        // Obtain the probability of each state in terms of the complete path of the observation
-        for (state <- relevantStates.filter(state => state(0) == '[')) {
-          probabilityOfParent(States(state)) = 1.0
-        }
-        for (state <- relevantStates.filter(state => state(0) == '/')) {
-          probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent)}
-        }
-        for (state <- relevantStates.filter(state => state(0) == '|')) {
-          probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent)}
-        }
-        for (state <- relevantStates.filter(state => state(0) == 'R')) {
-          probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent)}
-        }
-
-        // Obtain this instance's contribution to F_a
-        for (factor <- relevantFactors) {
-          F_a += factor.weights * probabilityOfParent(factor.getParent) * eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * instance._3
-         }
-      }
-
-      // M-step uses the GIS procedure with feature frequencies based on the E-step state occupancies to compute new transition functions
-      val GIS = new ConjugateGradient(stepSize)
-
-      // Create Weights Map from gradient for use with Factorie's ConjugateGradient
-      val weightMap = new WeightsMap((Weights) => new DenseTensor1(features.size, 0.0))
-
-      // Continue iterating until convergence
-      while (!GIS.isConverged) {
-
-        // E_a = Expected count of features
-        var gradient_E_a = new DenseTensor1(features.size, 0.0)
-
-        // Obtain this iteration's E_a (value and gradient) by looping through training data
+        // Iterate through training data
         for (instance <- trainingData) {
 
-          // Store relevant variables
+          // Store relevant factors and variables
+          val relevantFactors = model.getSubsetFactors(instance._1)
           val relevantStates = model.getSubset(instance._1)
 
-          // The probability of each state in terms of a complete path
+          // Forward probability
+          val alpha = scala.collection.mutable.HashMap[String, Array[Double]]()
+
+          // Backward probability
+          val beta = scala.collection.mutable.HashMap[String, Array[Double]]()
+
+          // Expected number of transitions from state i to state j, or factor(i,j)
+          val eta = scala.collection.mutable.HashMap[MarkovTransition, Double]()
+
+          // The probability of each state in terms of the complete path of the observation
           val probabilityOfParent = scala.collection.mutable.HashMap[State, Double]()
 
-          // Obtain the probability of each state in terms of a complete path
+          // Initialize alpha and beta tables
+          for (state <- model.getSubset(instance._1)) {
+            alpha.put(state, Array.fill(T_states) {
+              0.0
+            })
+            beta.put(state, Array.fill(T_states) {
+              0.0
+            })
+          }
+
+          // Sequentially find alpha(t) for all states
+          for (t <- 0 to T_transitions) {
+            t match {
+
+              // Set initial state probability to 1
+              case 0 => alpha(instance._1)(t) = 1.0
+
+              // Set final state probability to 1
+              case T_transitions => alpha(instance._2)(t) = 1.0
+
+              // Find alpha(t) for t's in between
+              case _ =>
+
+                // Obtain normalization term
+                var normalizationTerm = 0.0
+
+                // Obtain alpha(t) for each state
+                for (state <- relevantStates) {
+
+                  alpha(state)(t) += model.parentFactors(States(state)).foldLeft(alpha(state)(t)) { (score, factor) =>
+                    score + factor.score(factor.getChild.value, factor.getParent.value) *
+                      alpha(factor.getParent.Value)(t - 1)
+                  }
+
+                  // Add alpha(t) to normalizationTerm
+                  normalizationTerm += alpha(state)(t)
+                }
+
+                // Divide alpha(t) by normalizationTerm
+                for (state <- relevantStates) {
+                  alpha(state)(t) /= normalizationTerm
+                }
+            }
+          }
+
+          // Sequentially find beta(t) for all states
+          for (t <- T_transitions to 0 by -1) {
+            t match {
+
+              // Set initial state probability to 1
+              case 0 => beta(instance._1)(t) = 1.0
+
+              // Set final state probability to 1
+              case T_transitions => beta(instance._2)(t) = 1.0
+
+              // Find beta(t) for t's in between
+              case _ =>
+
+                // Store normalization term
+                var normalizationTerm = 0.0
+
+                // Obtain beta(t) for each state
+                for (state <- relevantStates) {
+                  beta(state)(t) += model.childFactors(States(state)).foldLeft(beta(state)(t)) { (score, factor) =>
+                    score + factor.score(factor.getChild.value, factor.getParent.value) *
+                      beta(factor.getChild.Value)(t + 1)
+                  }
+
+                  // Add beta(t) to normalizationTerm
+                  normalizationTerm += beta(state)(t)
+                }
+
+                // Divide beta(t) by normalizationTerm
+                for (state <- relevantStates) {
+                  beta(state)(t) /= normalizationTerm
+                }
+            }
+          }
+
+          // Obtain eta for all factors
+          for (factor <- relevantFactors) {
+
+            // Initialize eta value for a factor
+            eta.put(factor, 0.0)
+
+            // Obtain eta for a specific factor by summing across all t
+            for (t <- 0 until T_transitions) {
+              eta(factor) += alpha(factor.getParent.Value)(t) * factor.score(factor.getChild.value, factor.getParent.value) * beta(factor.getChild.Value)(t + 1)
+            }
+          }
+
+          // Obtain the probability of each state in terms of the complete path of the observation
           for (state <- relevantStates.filter(state => state(0) == '[')) {
             probabilityOfParent(States(state)) = 1.0
           }
           for (state <- relevantStates.filter(state => state(0) == '/')) {
-            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value)* probabilityOfParent(factor.getParent)}
+            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent) }
           }
           for (state <- relevantStates.filter(state => state(0) == '|')) {
-            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent)}
+            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent) }
           }
           for (state <- relevantStates.filter(state => state(0) == 'R')) {
-            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0){(score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent)}
+            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent) }
           }
 
-          for (factor <- model.getSubsetFactors(instance._1)) {
+          // Obtain this instance's contribution to F_a
+          for (factor <- relevantFactors) {
+            F_a += factor.weights * probabilityOfParent(factor.getParent) * eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * instance._3
+          }
+        }
+
+        // M-step uses the GIS procedure with feature frequencies based on the E-step state occupancies to compute new transition functions
+        val GIS = new ConjugateGradient(stepSize)
+
+        // Create Weights Map from gradient for use with Factorie's ConjugateGradient
+        val weightMap = new WeightsMap((Weights) => new DenseTensor1(features.size, 0.0))
+
+        // Continue iterating until convergence
+        while (!GIS.isConverged) {
+
+          // E_a = Expected count of features
+          var gradient_E_a = new DenseTensor1(features.size, 0.0)
+
+          // Obtain this iteration's E_a (value and gradient) by looping through training data
+          for (instance <- trainingData) {
+
+            // Store relevant variables
+            val relevantStates = model.getSubset(instance._1)
+
+            // The probability of each state in terms of a complete path
+            val probabilityOfParent = scala.collection.mutable.HashMap[State, Double]()
+
+            // Obtain the probability of each state in terms of a complete path
+            for (state <- relevantStates.filter(state => state(0) == '[')) {
+              probabilityOfParent(States(state)) = 1.0
+            }
+            for (state <- relevantStates.filter(state => state(0) == '/')) {
+              probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent) }
+            }
+            for (state <- relevantStates.filter(state => state(0) == '|')) {
+              probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent) }
+            }
+            for (state <- relevantStates.filter(state => state(0) == 'R')) {
+              probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent) }
+            }
+
+            for (factor <- model.getSubsetFactors(instance._1)) {
               gradient_E_a += factor.weights * probabilityOfParent(factor.getParent) * factor.score(factor.getChild.value, factor.getParent.value) * instance._3
+            }
           }
+
+          // Reset currLogLikelihood
+          currLogLikelihood = 0.0
+
+          // Find log-likelihood after one iteration of the EM algorithm
+          currLogLikelihood = this.findLogLikelihood
+
+          // Subtract regularization penalty to loss function
+          currLogLikelihood -= (model.regularizationWeight / 2 * (model.constraintWeights.value dot model.constraintWeights.value)) - (model.negativePenalization / 2 * model.constraintWeights.value.foldLeft(0.0) { (weight, dim) => weight + pow(min(dim, 0), 2) })
+          // Gradient of loss function
+          val gradient = gradient_E_a - F_a - model.constraintWeights.value * model.regularizationWeight
+
+          // Ensure gradient is positive for negative weights
+          for (dim <- features.indices) {
+            if (model.constraintWeights.value(dim) < 0)
+              gradient(dim) = -model.constraintWeights.value(dim) * model.negativePenalization
+          }
+
+          // Update Weights Map with this iteration's gradient
+          weightMap.update(model.constraintWeights, gradient)
+
+          // Iterate
+          GIS.step(model.parameters, weightMap, currLogLikelihood)
         }
-
-        // Reset currLogLikelihood
-        currLogLikelihood = 0.0
-
-        // Find log-likelihood after one iteration of the EM algorithm
-        currLogLikelihood = this.findLogLikelihood
-
-        // Subtract regularization penalty to loss function
-        currLogLikelihood -= (model.regularizationWeight / 2 * (model.constraintWeights.value dot model.constraintWeights.value)) - (model.negativePenalization / 2 * model.constraintWeights.value.foldLeft(0.0) { (weight, dim) => weight + pow(min(dim, 0), 2) })
-        // Gradient of loss function
-        val gradient = gradient_E_a - F_a - model.constraintWeights.value * model.regularizationWeight
-
-        // Ensure gradient is positive for negative weights
-        for (dim <- features.indices) {
-          if (model.constraintWeights.value(dim) < 0)
-            gradient(dim) = -model.constraintWeights.value(dim) * model.negativePenalization
-        }
-
-        // Update Weights Map with this iteration's gradient
-        weightMap.update(model.constraintWeights, gradient)
-
-        // Iterate
-        GIS.step(model.parameters, weightMap, currLogLikelihood)
-
       }
+
+      // Repeat previous do block until tolerance is not surpassed
+      while (abs(currLogLikelihood - prevLogLikelihood) > tolerance)
+
+      // Remove all negatives (should all be barely negative)
+      model.removeNegatives
+
+      // Reset currLogLikelihood
+      currLogLikelihood = 0.0
+
+      // Find log-likelihood of the set of parameters without regularization penalties
+      currLogLikelihood = this.findLogLikelihood
+
+      // Append current trial
+      trials += Tuple2(model.constraintWeights.value.asInstanceOf[DenseTensor1].copy, currLogLikelihood)
     }
+    catch {
+      case _: Throwable => System.err.println("Some ill parameter caused the gradient optimization to crash for trial: " + trial + ". This trial will be ignored")
+    }
+  }
 
-    // Repeat previous do block until tolerance is not surpassed
-    while (abs(currLogLikelihood - prevLogLikelihood) > tolerance)
-
-    // Remove all negatives (should all be barely negative)
-    model.removeNegatives
-
-    // Reset currLogLikelihood
-    currLogLikelihood = 0.0
-
-    // Find log-likelihood of the set of parameters without regularization penalties
-    currLogLikelihood = this.findLogLikelihood
-
-    // Append current trial
-    trials += Tuple2(model.constraintWeights.value.asInstanceOf[DenseTensor1].copy, currLogLikelihood)
+  // Ensure there are trials to print
+  if (trials.isEmpty) {
+    System.err.println("No results will be outputted because no trials have been successfully run.")
+    System.exit(1)
   }
 
   // Obtain best trial
