@@ -12,24 +12,37 @@ import java.io._
   */
 object WholeLanguageSimulation extends App {
 
+  // Check that tableau was inputted
+  if (args.length != 1) {
+    System.err.println("Usage: whole_language_simulation [FILE].csv")
+  }
+
   // Create a random variable for Gaussian noise
   implicit val random = new scala.util.Random()
 
   // Name of tableau file
-  var tableauFileName = "FullGrammar_forOTSoft_plus_missing_intermediate_states.csv"
+  var tableauFileName = args(0)
 
-  // The length of the word chain path in number of transitions and states
+  // Check that tableau is of .csv format
+  if (tableauFileName.takeRight(4) != ".csv") {
+    System.err.println("Tableau must be in .csv format")
+  }
+
+  // The length of the word chain path in number of transitions and states. Pick the longest possible path for the number of transitions and states.
   val T_transitions = 3
   var T_states = 4
 
   // Only continue with random initialization if log-likelihood is better than randomThreshold
   val allowRandomThreshold = false
 
+  // Remove markers (for states that are numbered for differentiation)
+  val removeMarkers = true
+
   // Minimum log-Likelihood of random initialization necessary to begin EM
   val randomThreshold = -600.0
 
   // Run numTrials amount of trials
-  val numTrials = 50
+  val numTrials = 1
 
   // Store learned constraint weights and log-likelihood for a given trial
   var trials = scala.collection.mutable.ArrayBuffer[Tuple2[DenseTensor1, Double]]()
@@ -49,9 +62,6 @@ object WholeLanguageSimulation extends App {
   // Variable to store features (the constraints)
   val features = scala.collection.mutable.ArrayBuffer[String]()
 
-  // Define constraints
-  tableau.head.foreach{feature => features.append(feature)}
-
   // Hold training data that consists of [perceivedForm, spokenForm, count of spokenForms in data]
   var trainingData = scala.collection.mutable.ArrayBuffer[Tuple3[String, String, Double]]()
 
@@ -62,64 +72,105 @@ object WholeLanguageSimulation extends App {
   var perceivedForm = None:Option[String]
 
   // Define states, transitions, and candidate weights, and then add them to the model
-  for (line <- tableau.drop(1)) {
+  for ((line, linenumber) <- tableau.zipWithIndex) {
 
     // Split line into cells
     val cells = line.mkString(",").split(",")
-    cells(0)(0) match {
+    cells(0) match {
 
-      // Have to add a symbol to differentiate between surface forms that are perceived or created
-      case '|' => cells(1) = "R" + cells(1)
+      // If reading "Features" line
+      case "Features" =>
 
-      // Change perceived form when starting new word chain
-      case '[' =>
-
-        // Save subset and empty for a new word chain
-        if (perceivedForm.isDefined && perceivedForm.get != cells(0)) {
-          model.addSubset(perceivedForm.get, subset)
-          subset = subset.empty
-        }
-        perceivedForm = Some(cells(0))
-      case _ =>
-    }
-
-    // Parse through tableau to obtain X, Y (X->Y) and feature values
-    val candidateWeights = new DenseTensor1(features.size, 0.0)
-    for ((element, index) <- cells.zipWithIndex) {
-      index match {
-
-        // Add X and Y to list of variables and to current word chain
-        case 0 => if (States.get(cells(index)).isEmpty) {
-          States.put(cells(index), new State(cells(index)))
-          subset.add(cells(index))
-        }
-        case 1 => if (States.get(cells(index)).isEmpty) {
-          States.put(cells(index), new State(cells(index)))
-          subset.add(cells(index))
+        // Check that features are only defined once
+        if (features.nonEmpty) {
+          System.err.println("The constraints have been redefined on line: " + linenumber + ". Only one definition for a set of constraints are allowed." )
+          System.exit(1)
         }
 
-        // Add word chain to training data
-        case 2 => if (cells(2).toDouble > 0) {
-          trainingData += Tuple3(perceivedForm.get, cells(1), cells(index).toDouble)
+        // Define constraints
+        cells.drop(1).foreach { feature => features.append(feature) }
+
+      // If reading "Transition" line
+      case "Transition" =>
+
+        // Check that features are defined before any transitions are read from the tableau
+        if (features.isEmpty) {
+          System.err.println("Please define constraints before defining transitions." )
+          System.exit(1)
         }
 
-        // Parse the features of the tableau
-        case _ => element match {
-          case "" => candidateWeights(index - 3) = 0
-          case nonBlank => candidateWeights(index - 3) = nonBlank.toDouble
-        }
+        cells(1)(0) match {
+
+        // Change perceived form when starting new word chain
+        case '[' =>
+
+          // Save subset and empty for a new word chain
+          if (perceivedForm.isDefined && perceivedForm.get != cells(1)) {
+            model.addSubset(perceivedForm.get, subset)
+            subset = subset.empty
+          }
+          perceivedForm = Some(cells(1))
+
+        case _ =>
       }
+        // Parse through tableau to obtain X, Y (X->Y) and feature values
+        val candidateWeights = new DenseTensor1(features.size, 0.0)
+        for ((element, index) <- cells.zipWithIndex) {
+          index match {
+
+            // Ignore "Transition" cell
+            case 0 =>
+
+            // Add X and Y to list of variables and to current word chain
+            case 1 => if (States.get(cells(index)).isEmpty) {
+              States.put(cells(index), new State(cells(index)))
+              subset.add(cells(index))
+            }
+            case 2 => if (States.get(cells(index)).isEmpty) {
+              States.put(cells(index), new State(cells(index)))
+              subset.add(cells(index))
+            }
+
+            // Parse the features of the tableau
+            case _ =>
+
+              // Check that the number of features in the transition do not go over the number of actual features
+              if (index - 3 >= features.size) {
+                System.err.println("There are more features than there are defined constraints on line: " + linenumber)
+                System.exit(1)
+              }
+
+              // Put tableau feature into weights
+              element match {
+                case "" => candidateWeights(index - 3) = 0
+                case nonBlank => candidateWeights(index - 3) = nonBlank.toDouble
+              }
+          }
+        }
+
+        // Add transition to model
+        model += new MarkovTransition(States(cells(2)), States(cells(1)), candidateWeights)
+
+      // If reading "Observation" line
+      case "Observation" =>
+
+        // If looking at first observation
+        if (trainingData.isEmpty) {
+
+          // Add last subset
+          model.addSubset(perceivedForm.get, subset)
+        }
+
+        // Add perceived form, spoken form, and frequency to trainingData
+        trainingData += Tuple3(cells(1), cells(2), cells(3).toDouble)
     }
-
-    // Add transition to model
-    model += new MarkovTransition(States(cells(1)), States(cells(0)), candidateWeights)
   }
-
-  // Add last subset
-  model.addSubset(perceivedForm.get, subset)
 
   // Repeat EM algorithm for numTrial amount of trials
   for (trial <- 0 to numTrials) {
+
+    // Print trial number
+    System.out.println("Trial: " + (trial + 1))
 
     // Initialize log-likelihood
     var currLogLikelihood = 0.0
@@ -440,7 +491,7 @@ object WholeLanguageSimulation extends App {
             alpha(state)(t) /= normalizationTerm
 
             // Obtain ground truth frequency and probability, and predicted probability
-            if (state(0) == 'R' && t == T_transitions) {
+            if (model.childFactors(States(state)).isEmpty && t == T_transitions) {
               val trainingFrequency = trainingData.find(element => element._1 == instance && element._2 == state) match {
 
                 // Parse for ground truth frequency
@@ -451,8 +502,30 @@ object WholeLanguageSimulation extends App {
               // Normalize ground truth frequencies into probabilities
               val normalizationTerm = trainingData.filter(item => item._1 == instance).foldLeft(0.0) {(normalizationTerm, item) => normalizationTerm + item._3}
 
-              // Print training and predicted probabilities of best trial (remove R from state)
-              pw.write(instance + "," + state.drop(1) + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + alpha(state)(t) + "\n")
+              // If we want to remove markers
+              if (removeMarkers) {
+
+                """^\([0-9]+\)""".r.findFirstIn(state) match {
+
+                  // If the string has a marker
+                  case Some(marker) =>
+
+                    // Print training and predicted probabilities of best trial
+                    pw.write(instance + "," + state.drop(marker.length) + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + alpha(state)(t) + "\n")
+
+                  // If the string does not have a marker
+                  case None =>
+
+                    // Print training and predicted probabilities of best trial
+                    pw.write(instance + "," + state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + alpha(state)(t) + "\n")
+                }
+              }
+              else {
+
+                // Print training and predicted probabilities of best trial
+                pw.write(instance + "," + state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + alpha(state)(t) + "\n")
+
+              }
             }
           }
       }
@@ -481,7 +554,6 @@ object WholeLanguageSimulation extends App {
       for (state <- model.getSubset(instance._1)) {
         alpha.put(state, Array.fill(T_states) {0.0})
       }
-
       // Sequentially find alpha(t) for all states
       for (t <- 0 to T_transitions) {
         t match {
