@@ -26,6 +26,7 @@ Instructions
   - The last set of lines must be "Observation" followed by the name of the root node, the name of the leaf node, and the frequency of this given observation.
   - One thing to note is that no two states can be given the same name, even if they semantically mean the same thing. For example, if I would like to create a path for three different nodes [1:A -> 2:B -> 3:A], the MEMM would model this as [1:A -> 2:B -> 1:A]. Thus, any two states with the same name must be differentiated with a beginning marker (X) where x is the marker for the number of the state. In our example, the path would be marked as [1:A -> 2:B -> 3:(2)A], where (2) is the marker showing that this state is different from the previous. The model is programmed to automatically eliminate these markers after training.
   - Due to problems, any accented characters or irregular characters are recommended to be converted from (á to 'a, and à to \`a) to ensure correctness of the model. 
+  - Lastly, as this is a .csv file, any cells that contain a ',' will cause the model to crash. Please consider converting any ',' to another character.
   - An example .csv file is given in whole_language_simulation/example.csv.
 
 6. There are multiple model parameters that can be adjusted depending on your particular model by passing in optional parameters to the .jar file. Keep in mind that passing in nonsensical values for some of these parameters may cause the model to crash.
