@@ -17,7 +17,7 @@ Instructions
   - https://introcs.cs.princeton.edu/java/15inout/windows-cmd.html
 
 4. To run the code with a sample tableau, run the following command from the base directory of the repository. The [FILE].csv must be passed as an argument into the .jar file for the model to run.
-   java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv 
+   - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv 
    
 5. The tableau must be in .csv format.
 
@@ -34,12 +34,12 @@ Instructions
   - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv -len_trans 4 -len_states 2 -threshold 300 -removemarkers false -numtrials 20 -tolerance 20 -l2param 200 -negparam 10 -stepsize 10
   
 Optional Parameters
--len_trans (default = 3) : The length of the word chain path in number of transitions
--len_states (default = 4): The length of the word chain path in number of states
--threshold (default = None):  Minimum log-Likelihood of random initialization necessary to begin the EM algorithm
--removemarkers (default = true): Remove markers (for states that are numbered for differentiation)
--numtrials (default: 50): The number of trials
--tolerance (default: 0.25): The tolerance in which the EM algorithm is considered converged
--l2param (default: 10): The l2 regularization penalty of the MEMM
--negparam (default: 500): The penalty given to a negative weight of the MEMM
--stepsize (default: 0.001): The step size of the Conjugate Gradient
+- -len_trans (default = 3) : The length of the word chain path in number of transitions
+- -len_states (default = 4): The length of the word chain path in number of states
+- -threshold (default = None):  Minimum log-Likelihood of random initialization necessary to begin the EM algorithm
+- -removemarkers (default = true): Remove markers (for states that are numbered for differentiation)
+- -numtrials (default: 50): The number of trials
+- -tolerance (default: 0.25): The tolerance in which the EM algorithm is considered converged
+- -l2param (default: 10): The l2 regularization penalty of the MEMM
+- -negparam (default: 500): The penalty given to a negative weight of the MEMM
+- -stepsize (default: 0.001): The step size of the Conjugate Gradient
