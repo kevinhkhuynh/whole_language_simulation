@@ -20,6 +20,8 @@ Instructions
 4. To run the code with a sample tableau, run the following command from the base directory of the repository. The [FILE].csv must be passed as an argument into the .jar file for the model to run.
    - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv 
    
+5. After the model finishes running, it outputs the trial run with the best negative log-likelihood along with the features and their given weights. It additionally outputs the predicted probabilities of the observations. The outputted file will have the path: whole_language_simulation/MaximumEntropyMarkovModel.txt. An example output file is given in whole_language_simulation/example.txt.
+   
 5. To run your own tableau, it must follow a strict format to ensure correctness. This format was chosen to allow in hopes of generalizing the model to work for different problems.
 
   - The tableau must be in .csv format.
