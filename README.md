@@ -19,8 +19,9 @@ Instructions
 4. To run the code with a sample tableau, run the following command from the base directory of the repository. The [FILE].csv must be passed as an argument into the .jar file for the model to run.
    - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv 
    
-5. The tableau must be in .csv format.
+5. To run your own tableau, it must follow a strict format to ensure correctness. This format was chosen to allow in hopes of generalizing the model to work for different problems.
 
+  - The tableau must be in .csv format.
   - The first cell of the first line must be "Features" followed by the list of features.
   - The next set of lines must be "Transition" followed by the name of the parent node, the name of the child node, and the list of features for the given transition. Optionally, cells of zero can be left as blank in a list of features for a given transition. However, the length of the list of features must equal to the number given in FEATURES.
   - The last set of lines must be "Observation" followed by the name of the root node, the name of the leaf node, and the frequency of this given observation.
