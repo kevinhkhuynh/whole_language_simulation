@@ -2,7 +2,7 @@
 
 Instructions
 
-1. Download the whole_language_simulation repository using Git.
+1. Download the whole_language_simulation repository from GitHub.
 
 2. Install Java JDK 8.
   - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
