@@ -16,10 +16,10 @@ class MaximumEntropyMarkovModel extends ItemizedModel with Parameters {
   var constraintWeights = Weights(new DenseTensor1(Array.fill(features.size)(0.0).map{dim => dim + abs(random.nextGaussian())}))
 
   // Regularization weight (initialized to 10)
-  val regularizationWeight = 10.0
+  var regularizationWeight = 10.0
 
   // Extremely penalize negative weights (Our situation requires positive weights)
-  val negativePenalization = 500.0
+  var negativePenalization = 500.0
 
   // Holds the different subsets of variables that equate to different word chains
   var subset = scala.collection.mutable.HashMap[String, scala.collection.mutable.Set[String]]()
@@ -29,19 +29,31 @@ class MaximumEntropyMarkovModel extends ItemizedModel with Parameters {
     this.constraintWeights = Weights(new DenseTensor1(Array.fill(features.size)(0.0).map{dim => dim + abs(random.nextGaussian())}))
   }
 
+  // Set constraint weights
   def setParameters(parameters: DenseTensor1) = {
     this.constraintWeights = Weights(new DenseTensor1(parameters))
   }
 
+  // Set constraint weights with a fillValue
   def setParameters(fillValue: Double) = {
     this.constraintWeights = Weights(new DenseTensor1(Array.fill(features.size)(fillValue)))
   }
 
+  // Remove all negatives from the constraint weights
   def removeNegatives = {
     val nonNegatives = new DenseTensor1(this.constraintWeights.value.map{dim => max(0.0, dim)})
     this.constraintWeights = Weights(nonNegatives)
   }
 
+  // Set regularizationWeight
+  def setRegularizationWeight(value: Double) = {
+    this.regularizationWeight = value
+  }
+
+  // Set negativePenalization
+  def setNegativePenalization(value: Double) = {
+    this.negativePenalization = value
+  }
 
   // Add a new word chain, or subset of variables, to the model
   def addSubset(perceivedForm: String, relatedForms: scala.collection.mutable.Set[String]) = subset.put(perceivedForm, relatedForms)

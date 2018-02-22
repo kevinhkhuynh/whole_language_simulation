@@ -12,9 +12,9 @@ import java.io._
   */
 object WholeLanguageSimulation extends App {
 
-  // Check that tableau was inputted
-  if (args.length != 1) {
-    System.err.println("Usage: whole_language_simulation [FILE].csv")
+  // Check that tableau was inputted and the number of parameters are correct
+  if (args.length < 1 || args.length % 2 == 0) {
+    System.err.println("Usage: whole_language_simulation [FILE].csv -optionalparameters ... \n Optional Parameters: \n-len_trans [int] -len_states [int] -threshold [double] -removemarkers [bool] -numtrials [int] -tolerance [double] -l2param [double] -negparam [double] -stepsize[double]")
   }
 
   // Create a random variable for Gaussian noise
@@ -29,29 +29,59 @@ object WholeLanguageSimulation extends App {
   }
 
   // The length of the word chain path in number of transitions and states. Pick the longest possible path for the number of transitions and states.
-  val T_transitions = 3
+  var T_transitions_var = 3
   var T_states = 4
 
   // Only continue with random initialization if log-likelihood is better than randomThreshold
-  val allowRandomThreshold = false
+  var allowRandomThreshold = false
 
   // Remove markers (for states that are numbered for differentiation)
-  val removeMarkers = true
+  var removeMarkers = true
 
   // Minimum log-Likelihood of random initialization necessary to begin EM
-  val randomThreshold = -600.0
+  var randomThreshold = -600.0
 
   // Run numTrials amount of trials
-  val numTrials = 50
+  var numTrials = 50
 
   // Store learned constraint weights and log-likelihood for a given trial
   var trials = scala.collection.mutable.ArrayBuffer[Tuple2[DenseTensor1, Double]]()
 
   // Choose tolerance to end EM algorithm (experimentally derived)
-  val tolerance = 0.25
+  var tolerance = 0.25
+
+  // The gradient step size
+  var stepSize = 0.001
 
   // Define model
   val model = new MaximumEntropyMarkovModel
+
+  // Obtain command line options
+  for (arg <- args.drop(1).grouped(2).toList) {
+    try {
+      arg(0) match {
+        case "-len_trans" => T_transitions_var = arg(1).toInt
+        case "-len_states" => T_states = arg(1).toInt
+        case "-threshold" => allowRandomThreshold = true
+          randomThreshold = arg(1).toDouble
+        case "-removemarkers" => removeMarkers = arg(1).toBoolean
+        case "-numtrials" => numTrials = arg(1).toInt
+        case "-tolerance" => tolerance = arg(1).toDouble
+        case "-l2param" => model.setRegularizationWeight(arg(1).toDouble)
+        case "-negparam" => model.setNegativePenalization(arg(1).toDouble)
+        case "-stepsize" => stepSize = arg(1).toDouble
+      }
+    }
+
+    // Error checking for the formatting of the optional parameters
+    catch {
+      case _ : Throwable => System.err.println("The formatting of one or more of the optional parameters are incorrect")
+        System.exit(1)
+    }
+  }
+
+  // Redefine vars
+  val T_transitions = T_transitions_var
 
   // Define states
   val States = scala.collection.mutable.HashMap[String, State]()
@@ -347,7 +377,7 @@ object WholeLanguageSimulation extends App {
       }
 
       // M-step uses the GIS procedure with feature frequencies based on the E-step state occupancies to compute new transition functions
-      val GIS = new ConjugateGradient(0.001)
+      val GIS = new ConjugateGradient(stepSize)
 
       // Create Weights Map from gradient for use with Factorie's ConjugateGradient
       val weightMap = new WeightsMap((Weights) => new DenseTensor1(features.size, 0.0))
