@@ -1,5 +1,7 @@
 # whole_language_simulation
 
+This repository uses Factorie to implement a Maximum Entropy Markov Model primarily for use in the domain of phonology and linguistics. Given a tableau consisting of many hidden states and a handful of observations, the MEMM calculates the weights of the constraints.
+
 Instructions
 
 1. Download the whole_language_simulation repository from GitHub.
@@ -17,10 +19,10 @@ Instructions
   - Open up the Windows Command Prompt.
   - https://introcs.cs.princeton.edu/java/15inout/windows-cmd.html
 
-4. To run the code with a sample tableau, run the following command from the base directory of the repository. The [FILE].csv must be passed as an argument into the .jar file for the model to run.
+4. To run the code with a sample tableau, run the following command from the base directory of the repository. The model can currently only train on one tableau at a time. Thus, if there are multiple tableaus, they must be merged into a single file. The [FILE].csv must be passed as an argument into the .jar file for the model to run.
    - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar example.csv 
    
-5. After the model finishes running, it outputs the trial run with the best negative log-likelihood along with the features and their given weights. It additionally outputs the predicted probabilities of the observations. The outputted file will have the path: whole_language_simulation/MaximumEntropyMarkovModel.txt. An example output file is given in whole_language_simulation/example.txt.
+5. After the model finishes running, it outputs the trial run with the best negative log-likelihood along with the features and their given weights. It additionally outputs the probabilities and frequencies of the ground truth observations along with the model's predicted probabilities. The outputted file will have the path: whole_language_simulation/MaximumEntropyMarkovModel.txt. An example output file is given in whole_language_simulation/example.txt.
    
 5. To run your own tableau, it must follow a strict format to ensure correctness. This format was chosen to allow in hopes of generalizing the model to work for different problems.
 
