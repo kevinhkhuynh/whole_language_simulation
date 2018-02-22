@@ -33,7 +33,7 @@ Instructions
   - Lastly, as this is a .csv file, any cells that contain a comma will cause the model to crash. Please consider substituting another character for commas.
   - An example .csv file is given in whole_language_simulation/example.csv.
 
-6. There are multiple model parameters that can be adjusted depending on your particular model by passing in optional parameters to the .jar file. The optional parameters can be inputted in any order. Also, keep in mind that passing in nonsensical values for some of these parameters may cause the model to crash.
+7. There are multiple model parameters that can be adjusted depending on your particular model by passing in optional parameters to the .jar file. The optional parameters can be inputted in any order. Also, keep in mind that passing in nonsensical values for some of these parameters may cause the model to crash.
 
   Optional Parameters
   - -len_trans [int] (default = 3) : The length of the word chain path in number of transitions
