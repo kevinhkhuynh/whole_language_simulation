@@ -39,7 +39,6 @@ Instructions to Run the Code
 7. There are multiple model parameters that can be adjusted depending on your particular model by passing in optional parameters to the .jar file. The optional parameters can be inputted in any order. Also, keep in mind that passing in certain values for some of these parameters may cause the model to never converge.
 
   Optional Parameters
-  - -len_states [int] (default = 4): The length of the longest word chain path in number of states
   - -threshold [double] (default = None):  Minimum log-Likelihood of random initialization necessary to begin the EM algorithm
   - -removemarkers [boolean] (default = true): Remove markers (for states that are numbered for differentiation)
   - -numtrials [int] (default: 50): The number of trials
