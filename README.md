@@ -29,6 +29,7 @@ Instructions to Run the Code
   - The tableau must be in .csv format.
   - The first cell of the first line must be "Features" followed by the list of features.
   - The first cell of the next set of lines must be "Transition" followed by the name of the parent node, the name of the child node, and the list of features for the given transition. Optionally, cells of zero can be left as blank in a list of features for a given transition. However, the length of the list of features must equal to the number given in FEATURES.
+  - These "Transition" lines must be grouped by word chain. The first "Transition" line of each new word chain should be marked as "*Transition". The parent node in this "*Transition" line will be marked as the root node of the word chain. 
   - The first cell of the last set of lines must be "Observation" followed by the name of the root node, the name of the leaf node, and the frequency of this given observation.
   - One thing to note is that no two states can be given the same name (state names are case-sensitive), even if they semantically mean the same thing. For example, if I would like to create a path for three different nodes [1:A -> 2:B -> 3:A], the MEMM would model this as [1:A -> 2:B -> 1:A]. This is because if two states have the same name, the model has no way of knowing which one of the two states should be connected by a transition. Thus, any two states with the same name must be differentiated with a beginning marker (X) where x is the marker for the number of the state. In our example, the path would be marked as [1:A -> 2:B -> 3:(2)A], where (2) is the marker showing that this state is different from the previous. The model is programmed to automatically eliminate these markers after training.
   - Due to problems, any accented characters or irregular characters are recommended to be converted from (á to 'a, and à to \`a) to ensure correctness of the model. 
@@ -38,8 +39,7 @@ Instructions to Run the Code
 7. There are multiple model parameters that can be adjusted depending on your particular model by passing in optional parameters to the .jar file. The optional parameters can be inputted in any order. Also, keep in mind that passing in certain values for some of these parameters may cause the model to never converge.
 
   Optional Parameters
-  - -len_trans [int] (default = 3) : The length of the word chain path in number of transitions
-  - -len_states [int] (default = 4): The length of the word chain path in number of states
+  - -len_states [int] (default = 4): The length of the longest word chain path in number of states
   - -threshold [double] (default = None):  Minimum log-Likelihood of random initialization necessary to begin the EM algorithm
   - -removemarkers [boolean] (default = true): Remove markers (for states that are numbered for differentiation)
   - -numtrials [int] (default: 50): The number of trials
