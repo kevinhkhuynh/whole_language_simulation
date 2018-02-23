@@ -201,18 +201,18 @@ object WholeLanguageSimulation extends App {
     trial match {
 
       // Initialize weights to zero
-      case 0 =>
+      case 1 =>
         model.setParameters(0.0)
 
       //Initialize weights to one
-      case 1 =>
+      case 2 =>
         model.setParameters(1.0)
 
       case _ =>
     }
 
     // Reset parameters until we obtain a random initialization with log-likelihood better than randomThreshold
-    if (allowRandomThreshold && trial > 1) {
+    if (allowRandomThreshold && trial > 2) {
       do {
 
         // Reset currLogLikelihood
