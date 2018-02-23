@@ -494,7 +494,7 @@ object WholeLanguageSimulation extends App {
       trials += Tuple2(model.constraintWeights.value.asInstanceOf[DenseTensor1].copy, currLogLikelihood)
     }
     catch {
-      case _: Throwable => System.err.println("Some ill parameter caused the gradient optimization to crash for trial: " + trial + ". This trial will be ignored")
+      case _: Throwable => System.err.println("Some ill parameter caused the gradient optimization to crash for trial: " + trial + ". This trial will be ignored.")
     }
   }
 
