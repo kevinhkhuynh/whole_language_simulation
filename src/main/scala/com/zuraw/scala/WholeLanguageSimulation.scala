@@ -13,9 +13,9 @@ import java.io._
 object WholeLanguageSimulation extends App {
 
   // Check that tableau was inputted and the number of parameters are correct
-  if (args.length < 1 || args.length % 2 == 0) {
-    System.err.println("Usage: whole_language_simulation [FILE].csv -optionalparameters ... \n Optional Parameters: \n-len_trans [int] -len_states [int] -threshold [double] -removemarkers [bool] -numtrials [int] -tolerance [double] -l2param [double] -negparam [double] -stepsize[double]")
-  }
+//  if (args.length < 1 || args.length % 2 == 0) {
+//    System.err.println("Usage: whole_language_simulation [FILE].csv -optionalparameters ... \n Optional Parameters: -len_states [int] -threshold [double] -removemarkers [bool] -numtrials [int] -tolerance [double] -l2param [double] -negparam [double] -stepsize[double]")
+//  }
 
   // Create a random variable for Gaussian noise
   implicit val random = new scala.util.Random()
@@ -28,8 +28,7 @@ object WholeLanguageSimulation extends App {
     System.err.println("Tableau must be in .csv format")
   }
 
-  // The length of the word chain path in number of transitions and states. Pick the longest possible path for the number of transitions and states.
-  var T_transitions_var = 3
+  // The length of the word chain path in number of states. Pick the number of states that occur in the longest possible word chain path.
   var T_states = 4
 
   // Only continue with random initialization if log-likelihood is better than randomThreshold
@@ -60,7 +59,6 @@ object WholeLanguageSimulation extends App {
   for (arg <- args.drop(1).grouped(2).toList) {
     try {
       arg(0) match {
-        case "-len_trans" => T_transitions_var = arg(1).toInt
         case "-len_states" => T_states = arg(1).toInt
         case "-threshold" => allowRandomThreshold = true
           randomThreshold = arg(1).toDouble
@@ -80,8 +78,8 @@ object WholeLanguageSimulation extends App {
     }
   }
 
-  // Redefine vars
-  val T_transitions = T_transitions_var
+  // The length of the word chain path in number of transitions.
+  val T_transitions = T_states - 1
 
   // Define states
   val States = scala.collection.mutable.HashMap[String, State]()
@@ -121,7 +119,7 @@ object WholeLanguageSimulation extends App {
         cells.drop(1).foreach { feature => features.append(feature) }
 
       // If reading "Transition" line
-      case "Transition" =>
+      case x if x == "*Transition" || x == "Transition" =>
 
         // Check that features are defined before any transitions are read from the tableau
         if (features.isEmpty) {
@@ -129,20 +127,15 @@ object WholeLanguageSimulation extends App {
           System.exit(1)
         }
 
-        cells(1)(0) match {
-
-        // Change perceived form when starting new word chain
-        case '[' =>
-
-          // Save subset and empty for a new word chain
+        // Start a new word chain
+        if (cells(0) == "*Transition") {
           if (perceivedForm.isDefined && perceivedForm.get != cells(1)) {
             model.addSubset(perceivedForm.get, subset)
             subset = subset.empty
           }
           perceivedForm = Some(cells(1))
+        }
 
-        case _ =>
-      }
         // Parse through tableau to obtain X, Y (X->Y) and feature values
         val candidateWeights = new DenseTensor1(features.size, 0.0)
         for ((element, index) <- cells.zipWithIndex) {
@@ -363,17 +356,36 @@ object WholeLanguageSimulation extends App {
           }
 
           // Obtain the probability of each state in terms of the complete path of the observation
-          for (state <- relevantStates.filter(state => state(0) == '[')) {
-            probabilityOfParent(States(state)) = 1.0
-          }
-          for (state <- relevantStates.filter(state => state(0) == '/')) {
-            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent) }
-          }
-          for (state <- relevantStates.filter(state => state(0) == '|')) {
-            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent) }
-          }
-          for (state <- relevantStates.filter(state => state(0) == 'R')) {
-            probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent) }
+          var parents = scala.collection.mutable.Set[String]()
+          var children = scala.collection.mutable.Set[String]()
+          for (t <- 0 to T_states) {
+
+            // Reset next variable
+            children = children.empty
+
+            // Obtain next viable states in path to find probability of
+            for (parent <- parents) {
+              for (factor <- model.childFactors(States(parent))) {
+                children.add(factor.getChild.Value)
+              }
+            }
+
+            // Reset prev variable
+            parents = parents.empty
+            t match {
+
+              // Add probability of root state in the path
+              case 0 => for (state <- relevantStates.filter(state => state == instance._1)) {
+                probabilityOfParent(States(state)) = 1.0
+                parents.add(state)
+              }
+
+              // Add probability of the states t transitions away from the root in the path
+              case _ => for (state <- relevantStates.intersect(children)) {
+                probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent) }
+                parents.add(state)
+                }
+            }
           }
 
           // Obtain this instance's contribution to F_a
@@ -403,18 +415,37 @@ object WholeLanguageSimulation extends App {
             // The probability of each state in terms of a complete path
             val probabilityOfParent = scala.collection.mutable.HashMap[State, Double]()
 
-            // Obtain the probability of each state in terms of a complete path
-            for (state <- relevantStates.filter(state => state(0) == '[')) {
-              probabilityOfParent(States(state)) = 1.0
-            }
-            for (state <- relevantStates.filter(state => state(0) == '/')) {
-              probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent) }
-            }
-            for (state <- relevantStates.filter(state => state(0) == '|')) {
-              probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent) }
-            }
-            for (state <- relevantStates.filter(state => state(0) == 'R')) {
-              probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent) }
+            // Obtain the probability of each state in terms of the complete path of the observation
+            var parents = scala.collection.mutable.Set[String]()
+            var children = scala.collection.mutable.Set[String]()
+            for (t <- 0 to T_states) {
+
+              // Reset next variable
+              children = children.empty
+
+              // Obtain next viable states in path to find probability of
+              for (parent <- parents) {
+                for (factor <- model.childFactors(States(parent))) {
+                  children.add(factor.getChild.Value)
+                }
+              }
+
+              // Reset prev variable
+              parents = parents.empty
+              t match {
+
+                // Add probability of root state in the path
+                case 0 => for (state <- relevantStates.filter(state => state == instance._1)) {
+                  probabilityOfParent(States(state)) = 1.0
+                  parents.add(state)
+                }
+
+                // Add probability of the states t transitions away from the root in the path
+                case _ => for (state <- relevantStates.intersect(children)) {
+                  probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + factor.score(factor.getChild.value, factor.getParent.value) * probabilityOfParent(factor.getParent) }
+                  parents.add(state)
+                }
+              }
             }
 
             for (factor <- model.getSubsetFactors(instance._1)) {
@@ -547,6 +578,14 @@ object WholeLanguageSimulation extends App {
               // Normalize ground truth frequencies into probabilities
               val normalizationTerm = trainingData.filter(item => item._1 == instance).foldLeft(0.0) {(normalizationTerm, item) => normalizationTerm + item._3}
 
+              // Since paths may be different sizes, we will treat the last non-zero alpha(t) as the end of the path
+              var finalAlpha = 0.0
+              for (t <- 0 to T_transitions) {
+                if (alpha(state)(t) > 0.0) {
+                  finalAlpha = alpha(state)(t)
+                }
+              }
+
               // If we want to remove markers
               if (removeMarkers) {
 
@@ -556,19 +595,19 @@ object WholeLanguageSimulation extends App {
                   case Some(marker) =>
 
                     // Print training and predicted probabilities of best trial
-                    pw.write(instance + "," + state.drop(marker.length) + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + alpha(state)(t) + "\n")
+                    pw.write(instance + "," + state.drop(marker.length) + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + finalAlpha + "\n")
 
                   // If the string does not have a marker
                   case None =>
 
                     // Print training and predicted probabilities of best trial
-                    pw.write(instance + "," + state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + alpha(state)(t) + "\n")
+                    pw.write(instance + "," + state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + finalAlpha + "\n")
                 }
               }
               else {
 
                 // Print training and predicted probabilities of best trial
-                pw.write(instance + "," + state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + alpha(state)(t) + "\n")
+                pw.write(instance + "," + state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + finalAlpha + "\n")
 
               }
             }
