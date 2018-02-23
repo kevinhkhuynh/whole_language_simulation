@@ -14,7 +14,7 @@ object WholeLanguageSimulation extends App {
 
   // Check that tableau was inputted and the number of parameters are correct
   if (args.length < 1 || args.length % 2 == 0) {
-    System.err.println("Usage: whole_language_simulation [FILE].csv -optionalparameters ... \n Optional Parameters: -len_states [int] -threshold [double] -removemarkers [bool] -numtrials [int] -tolerance [double] -l2param [double] -negparam [double] -stepsize[double]")
+    System.err.println("Usage: whole_language_simulation [FILE].csv -optionalparameters ... \n Optional Parameters: -threshold [double] -removemarkers [bool] -numtrials [int] -tolerance [double] -l2param [double] -negparam [double] -stepsize[double]")
   }
 
   // Create a random variable for Gaussian noise
@@ -27,9 +27,6 @@ object WholeLanguageSimulation extends App {
   if (tableauFileName.takeRight(4) != ".csv") {
     System.err.println("Tableau must be in .csv format")
   }
-
-  // The length of the word chain path in number of states. Pick the number of states that occur in the longest possible word chain path.
-  var T_states = 4
 
   // Only continue with random initialization if log-likelihood is better than randomThreshold
   var allowRandomThreshold = false
@@ -59,7 +56,6 @@ object WholeLanguageSimulation extends App {
   for (arg <- args.drop(1).grouped(2).toList) {
     try {
       arg(0) match {
-        case "-len_states" => T_states = arg(1).toInt
         case "-threshold" => allowRandomThreshold = true
           randomThreshold = arg(1).toDouble
         case "-removemarkers" => removeMarkers = arg(1).toBoolean
@@ -78,9 +74,6 @@ object WholeLanguageSimulation extends App {
     }
   }
 
-  // The length of the word chain path in number of transitions.
-  val T_transitions = T_states - 1
-
   // Define states
   val States = scala.collection.mutable.HashMap[String, State]()
 
@@ -91,7 +84,7 @@ object WholeLanguageSimulation extends App {
   val features = scala.collection.mutable.ArrayBuffer[String]()
 
   // Hold training data that consists of [perceivedForm, spokenForm, count of spokenForms in data]
-  var trainingData = scala.collection.mutable.ArrayBuffer[Tuple3[String, String, Double]]()
+  var trainingData = scala.collection.mutable.ArrayBuffer[Tuple4[String, String, Double, Int]]()
 
   // Hold current subset of variables, or word chain
   var subset = scala.collection.mutable.Set[String]()
@@ -170,7 +163,6 @@ object WholeLanguageSimulation extends App {
               }
           }
         }
-
         // Add transition to model
         model += new MarkovTransition(States(cells(2)), States(cells(1)), candidateWeights)
 
@@ -179,13 +171,20 @@ object WholeLanguageSimulation extends App {
 
         // If looking at first observation
         if (trainingData.isEmpty) {
-
           // Add last subset
           model.addSubset(perceivedForm.get, subset)
         }
 
+        // Obtain the path length of the word chain
+        var pathLength = 1
+        var iterator = States(cells(1))
+        while (model.childFactors(iterator).nonEmpty) {
+          iterator = model.childFactors(iterator).head.getChild
+          pathLength += 1
+        }
+
         // Add perceived form, spoken form, and frequency to trainingData
-        trainingData += Tuple3(cells(1), cells(2), cells(3).toDouble)
+        trainingData += Tuple4(cells(1), cells(2), cells(3).toDouble, pathLength)
     }
   }
 
@@ -247,6 +246,12 @@ object WholeLanguageSimulation extends App {
 
         // Iterate through training data
         for (instance <- trainingData) {
+
+          // The length of the word chain path in number of states.
+          val T_states = instance._4
+
+          // The length of the word chain path in number of transitions.
+          val T_transitions = T_states - 1
 
           // Store relevant factors and variables
           val relevantFactors = model.getSubsetFactors(instance._1)
@@ -355,6 +360,7 @@ object WholeLanguageSimulation extends App {
             }
           }
 
+
           // Obtain the probability of each state in terms of the complete path of the observation
           var parents = scala.collection.mutable.Set[String]()
           var children = scala.collection.mutable.Set[String]()
@@ -383,14 +389,20 @@ object WholeLanguageSimulation extends App {
               // Add probability of the states t transitions away from the root in the path
               case _ => for (state <- relevantStates.intersect(children)) {
                 probabilityOfParent(States(state)) = model.parentFactors(States(state)).foldLeft(0.0) { (score, factor) => score + eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * probabilityOfParent(factor.getParent) }
-                parents.add(state)
+                if (probabilityOfParent(States(state)).isNaN) {
+                  probabilityOfParent(States(state)) = 0.0
                 }
+                parents.add(state)
+              }
             }
           }
 
           // Obtain this instance's contribution to F_a
           for (factor <- relevantFactors) {
-            F_a += factor.weights * probabilityOfParent(factor.getParent) * eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * instance._3
+            if (!(probabilityOfParent(factor.getParent) * eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * instance._3).isNaN) {
+              F_a += factor.weights * probabilityOfParent(factor.getParent) * eta(factor) / model.childFactors(factor.getParent).foldLeft(0.0) { (normalizedEta, childFactor) => normalizedEta + eta(childFactor) } * instance._3
+
+            }
           }
         }
 
@@ -408,6 +420,12 @@ object WholeLanguageSimulation extends App {
 
           // Obtain this iteration's E_a (value and gradient) by looping through training data
           for (instance <- trainingData) {
+
+            // The length of the word chain path in number of states.
+            val T_states = instance._4
+
+            // The length of the word chain path in number of transitions.
+            val T_transitions = T_states - 1
 
             // Store relevant variables
             val relevantStates = model.getSubset(instance._1)
@@ -525,16 +543,22 @@ object WholeLanguageSimulation extends App {
 
   // Print training and predicted probabilities of best trial
   pw.write("\nInput, Candidate, Observed Frequency, Observed Probability, Predicted Probability \n")
-  for (instance <- trainingData.groupBy(instance =>instance._1).keys.toList) {
+  for (instance <- trainingData.groupBy(instance =>(instance._1,instance._4)).keys.toList) {
+
+    // The length of the word chain path in number of states.
+    val T_states = instance._2
+
+    // The length of the word chain path in number of transitions.
+    val T_transitions = T_states - 1
 
     // Store relevant factors and variables
-    val relevantStates = model.getSubset(instance)
+    val relevantStates = model.getSubset(instance._1)
 
     // Forward probability
     val alpha = scala.collection.mutable.HashMap[String, Array[Double]]()
 
     // Initialize alpha and beta tables
-    for (state <- model.getSubset(instance)) {
+    for (state <- model.getSubset(instance._1)) {
       alpha.put(state, Array.fill(T_states) {0.0})
     }
 
@@ -543,7 +567,7 @@ object WholeLanguageSimulation extends App {
       t match {
 
         // Set initial state probability to 1
-        case 0 => alpha(instance)(t) = 1.0
+        case 0 => alpha(instance._1)(t) = 1.0
 
         // Find alpha(t)
         case _ =>
@@ -568,7 +592,7 @@ object WholeLanguageSimulation extends App {
 
             // Obtain ground truth frequency and probability, and predicted probability
             if (model.childFactors(States(state)).isEmpty && t == T_transitions) {
-              val trainingFrequency = trainingData.find(element => element._1 == instance && element._2 == state) match {
+              val trainingFrequency = trainingData.find(element => element._1 == instance._1 && element._2 == state) match {
 
                 // Parse for ground truth frequency
                 case Some(element) => element._3
@@ -576,7 +600,7 @@ object WholeLanguageSimulation extends App {
               }
 
               // Normalize ground truth frequencies into probabilities
-              val normalizationTerm = trainingData.filter(item => item._1 == instance).foldLeft(0.0) {(normalizationTerm, item) => normalizationTerm + item._3}
+              val normalizationTerm = trainingData.filter(item => item._1 == instance._1).foldLeft(0.0) {(normalizationTerm, item) => normalizationTerm + item._3}
 
               // Since paths may be different sizes, we will treat the last non-zero alpha(t) as the end of the path
               var finalAlpha = 0.0
@@ -595,19 +619,19 @@ object WholeLanguageSimulation extends App {
                   case Some(marker) =>
 
                     // Print training and predicted probabilities of best trial
-                    pw.write(instance + "," + state.drop(marker.length) + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + finalAlpha + "\n")
+                    pw.write(instance._1 + "," + state.drop(marker.length) + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + finalAlpha + "\n")
 
                   // If the string does not have a marker
                   case None =>
 
                     // Print training and predicted probabilities of best trial
-                    pw.write(instance + "," + state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + finalAlpha + "\n")
+                    pw.write(instance._1 + "," + state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + finalAlpha + "\n")
                 }
               }
               else {
 
                 // Print training and predicted probabilities of best trial
-                pw.write(instance + "," + state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + finalAlpha + "\n")
+                pw.write(instance._1 + "," + state + "," + trainingFrequency + "," + trainingFrequency / normalizationTerm + "," + finalAlpha + "\n")
 
               }
             }
@@ -627,6 +651,12 @@ object WholeLanguageSimulation extends App {
 
     // Find this iteration's log-likelihood
     for (instance <- trainingData) {
+
+      // The length of the word chain path in number of states.
+      val T_states = instance._4
+
+      // The length of the word chain path in number of transitions.
+      val T_transitions = T_states - 1
 
       // Store relevant factors and variables
       val relevantStates = model.getSubset(instance._1)
