@@ -13,9 +13,9 @@ import java.io._
 object WholeLanguageSimulation extends App {
 
   // Check that tableau was inputted and the number of parameters are correct
-//  if (args.length < 1 || args.length % 2 == 0) {
-//    System.err.println("Usage: whole_language_simulation [FILE].csv -optionalparameters ... \n Optional Parameters: -len_states [int] -threshold [double] -removemarkers [bool] -numtrials [int] -tolerance [double] -l2param [double] -negparam [double] -stepsize[double]")
-//  }
+  if (args.length < 1 || args.length % 2 == 0) {
+    System.err.println("Usage: whole_language_simulation [FILE].csv -optionalparameters ... \n Optional Parameters: -len_states [int] -threshold [double] -removemarkers [bool] -numtrials [int] -tolerance [double] -l2param [double] -negparam [double] -stepsize[double]")
+  }
 
   // Create a random variable for Gaussian noise
   implicit val random = new scala.util.Random()
