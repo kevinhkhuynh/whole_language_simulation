@@ -89,6 +89,7 @@ Instructions to Run the Code
 5. Enter the dotFiles directory of the repository.
 
 6. To obtain the .png files, for each .dot file, run the following command in the directory dotFiles. The command creates a corresponding .png file for a single dot file. There may be other commands or, by using the GraphViz UI, to convert the dot file into a png.
+
    Example command:
   - dot example.dot -Tpng -o example.png
   
