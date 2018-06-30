@@ -69,15 +69,26 @@ Instructions to Run the Code
 
 1. Download and install GraphViz: https://www.graphviz.org/download/
 
-2. Run graph_viz_printer with a tableau and a corresponding outputted results file.
+2. Enter the base directory of the repository.
+
+  For Mac and Linux Users:
+  - Open up Terminal
+  - cd FULL_PATH_OF_BASE_DIRECTORY_OF_REPOSITORY
+  
+  For Windows Users:
+  - Open up the Windows Command Prompt.
+  - https://introcs.cs.princeton.edu/java/15inout/windows-cmd.html
+
+3. Run graph_viz_printer with a tableau and a corresponding outputted results file.
 
    Example command with optional parameters:
   - java -jar graph_viz_printer.jar antilla.csv antilla.txt
 
-3. The corresponding dot files will be printed into the directory dotFiles. A dot file corresponds to one word chain and can be interpreted by GraphViz to obtain a .png file.
+4. The corresponding dot files will be printed into the directory dotFiles. A dot file corresponds to one word chain and can be interpreted by GraphViz to obtain a .png file.
 
-4. To obtain the .png files, for each .dot file, run the following command in the directory dotFiles. The command creates a corresponding .png file for each dot file.
+5. Enter the dotFiles directory of the repository.
+
+6. To obtain the .png files, for each .dot file, run the following command in the directory dotFiles. The command creates a corresponding .png file for each dot file.
   - dot [FILE].dot -Tpng -o [FILE].png
   
-5. Usinh the .png file as a guide, the labels inside the nodes of the MEMM can be changed by altering the labels within the .dot file and repeating step 4. For example, we can alter the line "X1[label=<MELITIANE>]" within the .dot file to "X1[label=<[(mèli)ti(áne)]>]".
-  
+7. Using the .png file as a guide, the labels inside the nodes of the MEMM can be changed by altering the labels within the .dot file and repeating step 4. For example, we can alter the line "X1[label=<MELITIANE>]" within the .dot file to "X1[label=<[(mèli)ti(áne)]>]".
