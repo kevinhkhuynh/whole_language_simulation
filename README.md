@@ -81,7 +81,7 @@ Instructions to Run the Code
 
 3. Run graph_viz_printer with a tableau and a corresponding outputted results file.
 
-   Example command with optional parameters:
+   Example command:
   - java -jar graph_viz_printer.jar antilla.csv antilla.txt
 
 4. The corresponding dot files will be printed into the directory dotFiles. A dot file corresponds to one word chain and can be interpreted by GraphViz to obtain a .png file.
@@ -89,6 +89,7 @@ Instructions to Run the Code
 5. Enter the dotFiles directory of the repository.
 
 6. To obtain the .png files, for each .dot file, run the following command in the directory dotFiles. The command creates a corresponding .png file for a single dot file. There may be other commands or, by using the GraphViz UI, to convert the dot file into a png.
-  - dot [FILE].dot -Tpng -o [FILE (Name can differ)].png
+   Example command:
+  - dot example.dot -Tpng -o example.png
   
 7. Using the .png file as a guide, the labels inside the nodes of the MEMM can be changed by altering the labels within the .dot file and repeating step 4. For example, we can alter the line "X1[label=<[MELITIANE]>]" within the .dot file to "X1[label=<[(mèli)ti(áne)]>]". Certain linguistic characters may not be printable.
