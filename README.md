@@ -94,3 +94,5 @@ Instructions to Run the Code
   - dot example.dot -Tpng -o example.png
   
 7. Using the .png file as a guide, the labels inside the nodes of the MEMM can be changed by altering the labels within the .dot file and repeating step 4. For example, we can alter the line "X1[label=<[MELITIANE]>]" within the .dot file to "X1[label=<[(mèli)ti(áne)]>]". Certain linguistic characters may not be printable.
+
+8. If you wish to create a .png file without any transition probabilities (but retaining the arrows), remove all labels on the lines that have the following format: "X16 -> X21 [label="72%"]". Thus, we change "X16 -> X21 [label="72%"]" to "X16 -> X21".
