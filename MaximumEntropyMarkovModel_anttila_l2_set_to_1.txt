@@ -1,0 +1,27 @@
+Best Log-Likelihood				
+-283.8833314				
+				
+Constraint weights after optimization:				
+FtBin-mora_STEM,1.87511182			
+FtBin-syll_STEM,2.310577058			
+Parse-syll_STEM,1.635356289			
+*ti_STEM,1.700428769			
+Ident(cont)/footed_STEM,4.128016572			
+Ident(cont)/extrametrical_STEM,0			
+*Ci#_POST,1.899197942			
+Max-footed_POST,1.616333763			
+Max_POST,0			
+				
+Input	 Candidate	 Observed Frequency	 Observed Probability	 Predicted Probability 
+INPUT paranta-i	OBS paransi	10.005	0.099187072	0.104166152
+INPUT paranta-i	OBS paranti	5.46	0.054129077	0.049637102
+INPUT paranta-i	OBS parans	77.865	0.771934173	0.681184086
+INPUT paranta-i	OBS parant	7.54	0.074749678	0.165012659
+INPUT vet-i	OBS vesi	0	0	0.036154346
+INPUT vet-i	OBS ves	0	0	0.058192217
+INPUT vet-i	OBS veti	42	0.42	0.388404261
+INPUT vet-i	OBS vet	58	0.58	0.517249176
+INPUT vuota-i	OBS vuosi	4.83	0.048097988	0.067105998
+INPUT vuota-i	OBS vuoti	24.36	0.242581159	0.23423392
+INPUT vuota-i	OBS vuos	37.59	0.374327823	0.341711048
+INPUT vuota-i	OBS vuot	33.64	0.334993029	0.356949033

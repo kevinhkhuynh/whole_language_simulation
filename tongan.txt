@@ -1,65 +1,63 @@
-Best Log-Likelihood
--569.3081029310143
-
-Constraint weights after optimization:
-*[VRelProm] -> /Unstress/,1.3522744397835182
-*[V] -> /VV/,0.6053304388785687
-*[0] -> /Vfull/,2.7025702096334663
-*[0] -> /Vweak/,0.0
-*[V] -> /Vweak/,1.709617415646499
-*/VV/ -> |V|,1.0679806539749794
-*/V/ -> |VV|,1.9558293875350283
-*/Vfull/ -> |Vweak|,3.2084060880856575
-*/Vweak/ -> |Vfull|,1.3273494183760324
-*|Vfull| -> /Vweak/,2.120866515758329
-*|Vweak| -> [Vfull],2.516280903693987
-*|V| -> /VV/,2.0494252545039204
-*|VV| -> /V/,1.1317362484865872
-*/Vfull/ -> 0,3.4762580116568422
-*/Vweak/ -> V,1.3726414082526415
-*/V/ -> [VV],0.8142393655871372
-*/VV/ -> [V],2.630084107608578
-*/alpha stress/ -> [-alpha stress],3.223447040194439
-*/Unstress-iFull/,0.4018787276521738
-*/Unstress-Vfull/,0.0
-*/Vweak/,1.294905814196406
-*/StressVweak/,1.0077273056240539
-/FootBin/,3.03653393385587
-/Align-PWd.R.Ft.R/,0.6302181034768541
-/Align-PWd.L.Ft.L/,0.0
-/Align-Ft.R.PWd.R/,0.3605649660865182
-
-Input, Candidate, Observed Frequency, Observed Probability, Predicted Probability 
-[m'an3gr`Am] (ignoring a and e insertion),[(m'ono)ka(l'ame)],80.0,0.6779661016949152,0.44512904068835923
-[m'an3gr`Am] (ignoring a and e insertion),[(m'on)ka(l'ame)],0.0,0.0,0.055303301225767265
-[m'an3gr`Am] (ignoring a and e insertion),[mo(n'oka)(l'ame)],38.0,0.3220338983050847,0.44512904068835923
-[m'an3gr`Am] (ignoring a and e insertion),[m(n'oka)(l'ame)],0.0,0.0,0.05443861739751426
-[kr'Ist3l] (ignoring a insertions),[ka(l'isi)(t'ala)],112.0,0.5358851674641149,0.5195918709596328
-[kr'Ist3l] (ignoring a insertions),[ka(l'is)(t'ala)],97.0,0.46411483253588515,0.4804081290403673
-[mer'Idi3n] (ignoring footing. e insertion),[(m'eli)ti('ane)],9.0,1.0,0.879171744870602
-[mer'Idi3n] (ignoring footing. e insertion),[(m'el)ti('ane)],0.0,0.0,0.12082825512939797
-[m'inIst3] (ignoring first foot),[minisi(t'a)],0.0,0.0,0.04735787281298409
-[m'inIst3] (ignoring first foot),[mini(s'ita)],9.0,0.25,0.37938650382124733
-[m'inIst3] (ignoring first foot),[minis(t'a)],0.0,0.0,0.04166571969645075
-[m'inIst3] (ignoring first foot),[minisi(t'aa)],13.5,0.375,0.29897175782509755
-[m'inIst3] (ignoring first foot),[minis(t'aa)],13.5,0.375,0.2326181458442203
-[k'ust3m3] (ignoring first foot),[kasi(t'oma)],28.0,0.6511627906976745,0.595508035432742
-[k'ust3m3] (ignoring first foot),[kasito(m'aa)],15.0,0.3488372093023256,0.2989531950761343
-[k'ust3m3] (ignoring first foot),[kasit(m'a)],0.0,0.0,0.008252811235312027
-[k'ust3m3] (ignoring first foot),[kasit(m'aa)],0.0,0.0,0.03388452532724678
-[k'ust3m3] (ignoring first foot),[kasito(m'a)],0.0,0.0,0.06340143292856473
-[pr'Ez3d`Ent] (ignoring footing. e and final i insertion),[pe(l'es)(t'eni)],12.0,0.16,0.12082825512939796
-[pr'Ez3d`Ent] (ignoring footing. e and final i insertion),[pe(l'esi)(t'eni)],63.0,0.84,0.879171744870602
-[sEpt'Emb3] (ignoring first foot),[sepit(m'a)],0.0,0.0,0.008260118830033542
-[sEpt'Emb3] (ignoring first foot),[sepite(m'aa)],0.0,0.0,0.22735086833868867
-[sEpt'Emb3] (ignoring first foot),[sepi(t'ema)],35.0,1.0,0.6752399801386039
-[sEpt'Emb3] (ignoring first foot),[sepit(m'aa)],0.0,0.0,0.025275635882423087
-[sEpt'Emb3] (ignoring first foot),[sepite(m'a)],0.0,0.0,0.06387339681025088
-[fr'AkS3n] (ignoring i insertions),[f('laki)(s'eni)],24.0,0.36363636363636365,0.3040758378753953
-[fr'AkS3n] (ignoring i insertions),[(f'al)ki(s'eni)],0.0,0.0,0.039091640390980176
-[fr'AkS3n] (ignoring i insertions),[fa(l'aki)(s'eni)],24.0,0.36363636363636365,0.3284162608668123
-[fr'AkS3n] (ignoring i insertions),[(f'ala)ki(s'eni)],18.0,0.2727272727272727,0.3284162608668123
-[k`ANg3r'u],[(k'agi)ka(l'uu)],46.0,0.41818181818181815,0.31800266688856355
-[k`ANg3r'u],[k(g'ika)(l'uu)],0.0,0.0,0.06139063397712648
-[k`ANg3r'u],[(k'ag)ka(l'uu)],46.0,0.41818181818181815,0.3026040322457464
-[k`ANg3r'u],[ka(g'ika)(l'uu)],18.0,0.16363636363636364,0.31800266688856355
+Best Log-Likelihood				
+-551.9158983				
+				
+Constraint weights after optimization:				
+*[VRelProm] -> /Unstress/	1.520149281			
+*[V] -> /VV/	1.409374678			
+*[0] -> /Vfull/	2.825200463			
+*[0] -> /Vweak/	0			
+*[V] -> /Vweak/	1.787660611			
+*/VV/ -> |V|	1.357209767			
+*/V/ -> |VV|	1.670406841			
+*/Vfull/ -> |Vweak|	3.363819186			
+*/Vweak/ -> |Vfull|	1.671866759			
+*|Vfull| -> /Vweak/	2.738124444			
+*|Vweak| -> [Vfull]	2.529430445			
+*|V| -> /VV/	2.001871619			
+*|VV| -> /V/	0.577546447			
+*/Vfull/ -> 0	3.534391348			
+*/Vweak/ -> V	0			
+*/V/ -> [VV]	1.260947151			
+*/VV/ -> [V]	2.567139407			
+*/alpha stress/ -> [-alpha stress]	2.796056427			
+*/Unstress-iFull/	1.043037521			
+*/Unstress-Vfull/	0.240480664			
+*/Vweak/	0.576249398			
+*/StressVweak/	2.424712716			
+/FootBin/	3.015147855			
+/Align-PWd.R.Ft.R/	0.555285932			
+/Align-PWd.L.Ft.L/	0.603224234			
+/Align-Ft.R.PWd.R/	0			
+				
+Input	 Candidate	 Observed Frequency	 Observed Probability	 Predicted Probability 
+[m'an3gr`Am] (ignoring a and e insertion)	[(m'ono)ka(l'ame)]	80	0.677966102	0.569788246
+[m'an3gr`Am] (ignoring a and e insertion)	[(m'on)ka(l'ame)]	0	0	0.070996424
+[m'an3gr`Am] (ignoring a and e insertion)	[mo(n'oka)(l'ame)]	38	0.322033898	0.328039239
+[m'an3gr`Am] (ignoring a and e insertion)	[m(n'oka)(l'ame)]	0	0	0.031176091
+[kr'Ist3l] (ignoring a insertions)	[ka(l'isi)(t'ala)]	112	0.535885167	0.59012436
+[kr'Ist3l] (ignoring a insertions)	[ka(l'is)(t'ala)]	97	0.464114833	0.40987564
+[m'inIst3] (ignoring first foot)	[minisi(t'a)]	0	0	0.069822036
+[m'inIst3] (ignoring first foot)	[mini(s'ita)]	9	0.25	0.277854527
+[m'inIst3] (ignoring first foot)	[minis(t'a)]	0	0	0.038019368
+[m'inIst3] (ignoring first foot)	[minisi(t'aa)]	13.5	0.375	0.378057533
+[m'inIst3] (ignoring first foot)	[minis(t'aa)]	13.5	0.375	0.236246536
+[k'ust3m3] (ignoring first foot)	[kasi(t'oma)]	28	0.651162791	0.628255829
+[k'ust3m3] (ignoring first foot)	[kasito(m'aa)]	15	0.348837209	0.254806126
+[k'ust3m3] (ignoring first foot)	[kasit(m'a)]	0	0	0.006749957
+[k'ust3m3] (ignoring first foot)	[kasit(m'aa)]	0	0	0.027701259
+[k'ust3m3] (ignoring first foot)	[kasito(m'a)]	0	0	0.082486829
+[pr'Ez3d`Ent] (ignoring footing. e and final i insertion)	[pe(l'es)(t'eni)]	12	0.142857143	0.178174285
+[pr'Ez3d`Ent] (ignoring footing. e and final i insertion)	[pe(l'esi)(t'eni)]	72	0.857142857	0.821825715
+[sEpt'Emb3] (ignoring first foot)	[sepit(m'a)]	0	0	0.00622436
+[sEpt'Emb3] (ignoring first foot)	[sepite(m'aa)]	0	0	0.214022729
+[sEpt'Emb3] (ignoring first foot)	[sepi(t'ema)]	35	1	0.675269146
+[sEpt'Emb3] (ignoring first foot)	[sepit(m'aa)]	0	0	0.020633001
+[sEpt'Emb3] (ignoring first foot)	[sepite(m'a)]	0	0	0.083850764
+[fr'AkS3n] (ignoring i insertions)	[f('laki)(s'eni)]	24	0.363636364	0.255812287
+[fr'AkS3n] (ignoring i insertions)	[(f'al)ki(s'eni)]	0	0	0.029891749
+[fr'AkS3n] (ignoring i insertions)	[fa(l'aki)(s'eni)]	24	0.363636364	0.39034424
+[fr'AkS3n] (ignoring i insertions)	[(f'ala)ki(s'eni)]	18	0.272727273	0.323951725
+[k`ANg3r'u]	[(k'agi)ka(l'uu)]	46	0.418181818	0.476954066
+[k`ANg3r'u]	[k(g'ika)(l'uu)]	0	0	0.01852503
+[k`ANg3r'u]	[(k'ag)ka(l'uu)]	46	0.418181818	0.314482725
+[k`ANg3r'u]	[ka(g'ika)(l'uu)]	18	0.163636364	0.190038179
