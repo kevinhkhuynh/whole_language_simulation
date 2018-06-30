@@ -60,3 +60,22 @@ Instructions to Alter the Code
   - mvn package
 4. The new source code will be built and the model can now be run with the following command:
   - java -jar target/whole_language_simulation-1.0-SNAPSHOT-jar-with-dependencies.jar [FILE].csv
+
+# graph_viz_printer
+
+An automatic GraphViz printer can be used to print the transition structures with the optimized probabilities.
+
+Instructions to Run the Code
+
+1. Download and install GraphViz: https://www.graphviz.org/download/
+
+2. Run graph_viz_printer with a tableau and a corresponding outputted results file.
+
+   Example command with optional parameters:
+  - java -jar graph_viz_printer.jar antilla.csv antilla.txt
+
+3. The corresponding dot files will be printed into the directory dotFiles. A dot file corresponds to one word chain and can be interpreted by GraphViz to obtain a .png file.
+
+4. To obtain the .png files, for each .dot file, run the following command in the directory dotFiles. The command creates a corresponding .png file for each dot file.
+  - dot [FILE].dot -Tpng -o [FILE].png
+  
