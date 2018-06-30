@@ -79,3 +79,5 @@ Instructions to Run the Code
 4. To obtain the .png files, for each .dot file, run the following command in the directory dotFiles. The command creates a corresponding .png file for each dot file.
   - dot [FILE].dot -Tpng -o [FILE].png
   
+5. Usin the .png file as a guide, the labels inside the nodes of the MEMM can be changed by altering the labels within the .dot file and repeating step 4. For example, we can alter the line "X1[label=<MELITIANE>]" within the .dot file to "X1[label=<[(mèli)ti(áne)]>]".
+  
