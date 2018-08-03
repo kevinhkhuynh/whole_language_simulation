@@ -43,8 +43,8 @@ Instructions to Run the Code
   - -removemarkers [boolean] (default = true): Remove markers (for states that are numbered for differentiation)
   - -numtrials [int] (default: 50): The number of trials
   - -tolerance [double] (default: 0.25): The tolerance in which the EM algorithm is considered converged
-  - -l2param [double] (default: 10): The l2 regularization penalty of the MEMM
-  - -negparam [double] (default: 500): The penalty given to a negative weight of the MEMM
+  - -l2param [double] (default: 10): The l2 regularization penalty of the MEMM. This is lambda1 in the paper.
+  - -negparam [double] (default: 500): The penalty given to a negative weight of the MEMM. This is lambda2 in the paper.
   - -stepsize [double] (default: 0.001): The step size of the Conjugate Gradient
 
   Example command with optional parameters:
