@@ -1,5 +1,7 @@
 # whole_language_simulation
 
+Zuraw, K. & Huynh, K. (2018). Solving the Problem of Whole-Language Simulation: A Case Study from Tongan Loan Adaptation. University of California, Los Angeles.
+
 This repository uses Factorie to implement a Maximum Entropy Markov Model primarily for use in the domain of phonology and linguistics. Given a tableau consisting of many hidden states and a handful of observations, the MEMM calculates the weights of the constraints.
 
 Instructions to Run the Code
